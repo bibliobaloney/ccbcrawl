@@ -1,17 +1,14 @@
-import requests, bs4, re, csv
-
-res = requests.get('https://dockets.ccb.gov/search/cases')
-res.raise_for_status()
-caselistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+import requests, bs4, re, csv, math
 
 def getcaseurls(row):
     cells = []
     cells += row.find_all('td')
-    docketnum = str(cells[1].contents[0])
+    docketnum = str(cells[1].get_text(strip=True))
     link = row.a
     casedocketpage = link['href']
     casedocketurl = 'https://dockets.ccb.gov' + casedocketpage
     caseurls = [docketnum, casedocketurl]
+    print(caseurls)
     return caseurls
 
 def getdocketinfo(case):
@@ -151,10 +148,38 @@ def getinfringementdetails(case):
     infrdetails.append(infrdescription[:1200])
     return infrdetails
 
-casetablerows = caselistsoup.tbody.find_all('tr')
+
 casedatalist = []
+
+# Get the 20 latest cases
+res = requests.get('https://dockets.ccb.gov/search/cases')
+res.raise_for_status()
+caselistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+casetablerows = caselistsoup.tbody.find_all('tr')
 for row in casetablerows:
     casedatalist += [getcaseurls(row)]
+
+# Get the number of pages, with 20 cases each
+latestdocket = casedatalist[0][0]
+lastdocketend = latestdocket[7:]
+lastdocketnum = int(lastdocketend)
+divtwenty = lastdocketnum / 20
+pages = math.ceil(divtwenty)
+
+# Get the rest of the pages and add their docket numbers and captions to casedatalist
+currentpage = 2
+offset = 20
+while currentpage <= pages:
+    caselisturl = ('https://dockets.ccb.gov/search/cases?closed=false&columns=longCaption&columns=code&columns=parties&columns=actions&offset=' +
+    str(offset) + '&max=20&sort=code&order=desc')
+    res5 = requests.get(caselisturl)
+    nextcaselistsoup = bs4.BeautifulSoup(res5.text, 'lxml')
+    nextcasetablerows = nextcaselistsoup.tbody.find_all('tr')
+    for row in nextcasetablerows:
+        casedatalist += [getcaseurls(row)]
+    currentpage += 1
+    offset += 20
+
 
 # -------for a subset------
 # samplecaselist = []
