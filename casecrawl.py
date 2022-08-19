@@ -100,7 +100,10 @@ def getcasedetails(case):
         capclaimant = fullcapclaimant.split('(')[0]
     else:
         capclaimant = fullcapclaimant
-    claimant = claimsoup.find(text=re.compile(capclaimant)).parent.get_text(strip=True)
+    if len(claimsoup.find_all(text=re.compile(capclaimant))) > 1:
+        claimant = claimsoup.find_all(text=re.compile(capclaimant))[1].parent.get_text(strip=True)
+    else:
+        claimant = claimsoup.find(text=re.compile(capclaimant)).parent.get_text(strip=True)
     details.append(claimant)
     claimantlawfirm = 'none'
     if claimsoup.find_all(text=re.compile('Law firm')):
@@ -112,8 +115,15 @@ def getcasedetails(case):
         caprespondent = fullcaprespondent.split('(')[0]
     else:
         caprespondent = fullcaprespondent
-    respondent = claimsoup.find(text=re.compile(caprespondent)).parent.get_text(strip=True)
+    if len(claimsoup.find_all(text=re.compile(caprespondent))) > 1:
+        respondent = claimsoup.find_all(text=re.compile(caprespondent))[1].parent.get_text(strip=True)
+    else:
+        respondent = claimsoup.find(text=re.compile(capclaimant)).parent.get_text(strip=True)
     details.append(respondent)
+    damagesparentdiv = claimsoup.find(attrs={'data-field' : 'harm'})
+    damagesdiv = damagesparentdiv.contents[1]
+    damages = damagesdiv.get_text(strip=True)
+    details.append(damages[:1200])
     return details
 
 def getinfringementdetails(case):
@@ -147,7 +157,6 @@ def getinfringementdetails(case):
     infrdescription = infrdescriptiondiv.get_text(strip=True)
     infrdetails.append(infrdescription[:1200])
     return infrdetails
-
 
 casedatalist = []
 
@@ -186,16 +195,11 @@ while currentpage <= pages:
 # samplecaselist.append(casedatalist[-92])
 # samplecaselist.append(casedatalist[-67])
 # samplecaselist.append(casedatalist[-59])
-# samplecaselist.append(casedatalist[-58])
 # samplecaselist.append(casedatalist[-52])
-# samplecaselist.append(casedatalist[-42])
 # samplecaselist.append(casedatalist[-39])
-# samplecaselist.append(casedatalist[-34])
 # samplecaselist.append(casedatalist[-30])
 # samplecaselist.append(casedatalist[-20])
-# samplecaselist.append(casedatalist[-19])
 # samplecaselist.append(casedatalist[-16])
-# samplecaselist.append(casedatalist[-15])
 # samplecaselist.append(casedatalist[-1])
 
 # for case in samplecaselist:
@@ -212,7 +216,7 @@ while currentpage <= pages:
 #             print(case)
 
 # csvheader = (['Docket No.', 'Docket URL', 'Caption', 'Oldest doc', 'Oldest doc date', 'Latest doc',
-#     'Latest doc date', 'Claim URL', 'Claim types', 'Smaller?', 'Claimant', 'Claimant law firm', 'Respondent',
+#     'Latest doc date', 'Claim URL', 'Claim types', 'Smaller?', 'Claimant', 'Claimant law firm', 'Respondent', 'Relief sought',
 #     'Work registered?', 'Reg effective date', 'Work type', 'Description of work', 'Description of infringement'])
 # with open('ccbcasedata.csv', 'w') as casedatacsv:
 #     write = csv.writer(casedatacsv)
@@ -221,7 +225,7 @@ while currentpage <= pages:
 # casedatacsv.close()
 
 # for case in samplecaselist:
-#     while len(case) < 18:
+#     while len(case) < 19:
 #         case.append('NA')
 
 # tabledoc = open("infringementtable.html", 'w')
@@ -230,15 +234,17 @@ while currentpage <= pages:
 #     'border: 1px solid black;' + '\n' + '}' +
 #     '\n' + '</style>' + '\n' + '</head>' + '\n' + '<body>' +
 #     '\n' +'<table>' + '/n' +
-#     '<thead><tr><th>Case</th><th>Claim type</th><th>Description of Work</th><th>Description of Infringement</th>' + '\n' +
+#     '<thead><tr><th>Case</th><th>Claim type</th><th>Description of Work</th><th>Description of Infringement (Truncted at 1200 characters)</th>' +
+#     '<th>Description of relief sought (first 1200 characters)</th>'
 #     '<th>Claimant</th><th>Claimant Law Firm</th><th>Respondent</th><th>Most recent filing</th></tr></thead>')
 
 # for case in samplecaselist:
 #     tabledoc.write('<tr>' +
 #         '<td>' + '<a href="' + case[1] + '">' + case[0] + '</a>' '</td>' +
 #         '<td>' + case[8] + '</td>' +
-#         '<td>' + case[16] + '</td>' +
 #         '<td>' + case[17] + '</td>' +
+#         '<td>' + case[18] + '</td>' +
+#         '<td>' + case[13] + '</td>' +
 #         '<td>' + case[10] + '</td>' +
 #         '<td>' + case[11] + '</td>' +
 #         '<td>' + case[12] + '</td>' +
@@ -263,7 +269,7 @@ for case in casedatalist:
             print(case)
 
 csvheader = (['Docket No.', 'Docket URL', 'Caption', 'Oldest doc', 'Oldest doc date', 'Latest doc',
-    'Latest doc date', 'Claim URL', 'Claim types', 'Smaller?', 'Claimant', 'Claimant law firm', 'Respondent',
+    'Latest doc date', 'Claim URL', 'Claim types', 'Smaller?', 'Claimant', 'Claimant law firm', 'Respondent', 'Relief sought',
     'Work registered?', 'Reg effective date', 'Work type', 'Description of work', 'Description of infringement'])
 with open('ccbcasedata.csv', 'w') as casedatacsv:
     write = csv.writer(casedatacsv)
@@ -272,7 +278,7 @@ with open('ccbcasedata.csv', 'w') as casedatacsv:
 casedatacsv.close()
 
 for case in casedatalist:
-    while len(case) < 18:
+    while len(case) < 19:
         case.append('NA')
 
 tabledoc = open("infringementtable.html", 'w')
@@ -282,15 +288,17 @@ tabledoc.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
     '\n' + 'td {' + '\n' + '    word-wrap: break-word;' + '\n'+ '    max-width: 1px;' + '\n' + '    }' +
     '\n' + '</style>' + '\n' + '</head>' + '\n' + '<body>' +
     '\n' +'<table>' + '\n' +
-    '<thead><tr><th>Case</th><th>Claim type</th><th>Description of Work</th><th>Description of Infringement (up to 1200 characters)</th>' + '\n' +
+    '<thead><tr><th>Case</th><th>Claim type</th><th>Description of Work</th><th>Description of Infringement (Truncated at 1200 characters if longer)</th>' +
+    '<th>Description of harm suffered and relief sought</th>'
     '<th>Claimant</th><th>Claimant Law Firm</th><th>Respondent</th><th>Most recent filing</th></tr></thead>')
 
 for case in casedatalist:
     tabledoc.write('<tr>' +
         '<td>' + '<a href="' + case[1] + '">' + case[0] + '</a>' '</td>' +
         '<td>' + case[8] + '</td>' +
-        '<td>' + case[16] + '</td>' +
         '<td>' + case[17] + '</td>' +
+        '<td>' + case[18] + '</td>' +
+        '<td>' + case[13] + '</td>' +
         '<td>' + case[10] + '</td>' +
         '<td>' + case[11] + '</td>' +
         '<td>' + case[12] + '</td>' +
