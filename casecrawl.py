@@ -284,12 +284,16 @@ for case in casedatalist:
 tabledoc = open("infringementtable.html", 'w')
 tabledoc.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
     '<head>' + '\n' +
-    '<style>' + '\n' + 'table, th, td {' + '\n' + '    border: 1px solid black;' + '\n' + '    }' +
-    '\n' + 'td {' + '\n' + '    word-wrap: break-word;' + '\n'+ '    max-width: 1px;' + '\n' + '    }' +
+    '<style>' + '\n' + 'table, th, td {' + '\n' + '    border: 1px solid #ddd;' + '\n' +
+    '    border-collapse: collapse;' + '\n' + '    }' +
+    '\n' + 'td {' + '\n' + '    word-wrap: break-word;' + '\n' + '    max-width: 1px;' +
+    '\n' + '    padding: 6px;' + '\n' + '    }' +
+    '\n' + 'th {' + '\n' + '    padding: 6px;' + '\n' + '    }' +
+    '\n' + 'tr:nth-child(odd) {' + '\n' + '    background-color: #f9f9f9;' + '\n' + '    }' +
     '\n' + '</style>' + '\n' + '</head>' + '\n' + '<body>' +
     '\n' +'<table>' + '\n' +
     '<thead><tr><th>Case</th><th>Claim type</th><th>Description of Work</th><th>Description of Infringement (Truncated at 1200 characters if longer)</th>' +
-    '<th>Description of harm suffered and relief sought</th>'
+    '<th>Description of harm suffered and relief sought (Truncated at 1200)</th>'
     '<th>Claimant</th><th>Claimant Law Firm</th><th>Respondent</th><th>Most recent filing</th></tr></thead>')
 
 for case in casedatalist:
