@@ -2,10 +2,11 @@ import requests, bs4, re, csv, math
 
 lastweek = open('casedata.csv', 'r')
 
+# Grab cases where claim details have already been collected in local file
 reader = csv.DictReader(lastweek)
 casedatalist = list()
 for case in reader:
-    if case["Oldest doc"] != "None":
+    if case["Claim URL"][:4] == "http":
         casedatalist.append(case)
 lastweek.close()
 
@@ -31,6 +32,32 @@ while currentcheck <= lastdocketnum:
     if docketnum not in docketswehave:
         docketsweneed.append(docketnum)
     currentcheck += 1
+
+# for weird edge cases where there are documents, but the claim isn't first, like 22-CCB-0015
+def digforclaimurl(docketurl):
+    res5 = requests.get(docketurl + '?sort=submittedDate&max=100&order=asc')
+    res5.raise_for_status()
+    docketsoup = bs4.BeautifulSoup(res5.text, 'lxml')
+    docketrows = docketsoup.find_all('tr')
+    mytable = []
+    claimrow = 'No claim row found'
+    currentrow = 0
+    while claimrow == 'No claim row found' and currentrow < len(docketrows):
+        tds = []
+        cells = docketrows[currentrow].find_all('td')
+        for cell in cells:
+            tds.append(cell.get_text(strip=True))
+        if len(tds) > 2 and (tds[2] == "Claim" or tds[2] == "Amended Claim"):
+            claimrow = docketrows[currentrow]
+        else:
+            currentrow += 1
+    if claimrow == 'No claim row found':
+        return 'No claim found'
+    claimcell = claimrow.find_all('td')[1]
+    claimlink = claimcell.a
+    claimpage = claimlink.get('href')
+    claimurl = 'https://dockets.ccb.gov' + claimpage
+    return claimurl
 
 # to retrieve caption, oldest document, oldest document date, and claim URL if available
 def getcapandclaim(docketurl):
@@ -71,7 +98,7 @@ def getcapandclaim(docketurl):
         claimurl = 'https://dockets.ccb.gov' + claimpage
         capandclaim.append(claimurl)
     else:
-        capandclaim.append("Not available")
+        capandclaim.append(digforclaimurl(docketurl))
     return capandclaim
 
 # to retrieve claimant, respondent, law firm, etc.
@@ -227,7 +254,7 @@ for docket in docketsweneed:
     newcase["Description of infringement"] = infrdetails[4]
     casedatalist.append(newcase)
 
-# Sort to slot in the newly grabbed cases in the expected order
+# Sort, to slot in the newly grabbed cases in the expected order
 casedatalist.sort(key=lambda x: x['Docket No.'], reverse=True)
 
 print("Fetching latest docs filed")

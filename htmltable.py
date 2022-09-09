@@ -10,7 +10,7 @@ newdata.close()
 
 tabledoc = open("infringementtable.html", 'w')
 tabledoc.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
-    '<head>' + '\n' +
+    '<head><title>CCB cases weekly snapshot </title>' + '\n' +
     '<style>' + '\n' + 'table, th, td {' + '\n' + '    border: 1px solid #ddd;' + '\n' +
     '    border-collapse: collapse;' + '\n' + '    }' +
     '\n' + 'td {' + '\n' + '    word-wrap: break-word;' + '\n' + '    max-width: 1px;' +
