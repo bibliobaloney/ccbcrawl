@@ -45,6 +45,12 @@ for row in amendtablerows:
     amendedcasesall.append(getdocketnum(row))
     amendordersall.append([getdocketnum(row), getdatefiled(row)])
 
+# output list of cases w orders to amend to a text file for closedcases.py
+amendfile = open('amendfile.txt', 'w')
+for item in amendedcasesall:
+    amendfile.writelines(item + '\n')
+amendfile.close()
+
 # create deduped list of cases with orders to amend
 setamendedcases = set(amendedcasesall)
 amendedcases = list(setamendedcases)
@@ -70,6 +76,12 @@ certlistrows = certlistsoup.tbody.find_all('tr')
 for row in certlistrows:
     certcasesall.append(getdocketnum(row))
     certordersall.append([getdocketnum(row), getdatefiled(row)])
+
+# output list of cases w orders to cert to a text file for closedcases.py
+certfile = open('certfile.txt', 'w')
+for item in certcasesall:
+    certfile.writelines(item + '\n')
+certfile.close()
 
 # create deduped list of cases with certified claims
 setcertcases = set(certcasesall)

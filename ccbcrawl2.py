@@ -39,7 +39,6 @@ def digforclaimurl(docketurl):
     res5.raise_for_status()
     docketsoup = bs4.BeautifulSoup(res5.text, 'lxml')
     docketrows = docketsoup.find_all('tr')
-    mytable = []
     claimrow = 'No claim row found'
     currentrow = 0
     while claimrow == 'No claim row found' and currentrow < len(docketrows):
@@ -270,3 +269,4 @@ with open('casedata.csv', 'w') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames = casedatalist[0].keys())
     writer.writeheader()
     writer.writerows(casedatalist)
+csvfile.close()
