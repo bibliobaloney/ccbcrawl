@@ -76,6 +76,13 @@ certlistrows = certlistsoup.tbody.find_all('tr')
 for row in certlistrows:
     certcasesall.append(getdocketnum(row))
     certordersall.append([getdocketnum(row), getdatefiled(row)])
+res = requests.get('https://dockets.ccb.gov/search/documents?docTypeGroup=type%3A113&max=100')
+res.raise_for_status()
+certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+certlistrows = certlistsoup.tbody.find_all('tr')
+for row in certlistrows:
+    certcasesall.append(getdocketnum(row))
+    certordersall.append([getdocketnum(row), getdatefiled(row)])
 
 # output list of cases w orders to cert to a text file for closedcases.py
 certfile = open('certfile.txt', 'w')
