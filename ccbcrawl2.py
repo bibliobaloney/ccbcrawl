@@ -86,6 +86,8 @@ def getcapandclaim(docketurl):
             srspan = ourspan.find(class_='sr-only')
             srspan.decompose()
             firstdoc = ourspan.get_text(strip=True)
+        if '(Opens new window)' in firstdoc:
+            firstdoc = firstdoc.replace('(Opens new window)', '')
         capandclaim.append(firstdoc)
         firstdocdate = firstdocrow.find_all('td')[-1].get_text(strip=True)
         capandclaim.append(firstdocdate)
@@ -210,6 +212,8 @@ def getlatest(docketurl):
             srspan = ourspan.find(class_='sr-only')
             srspan.decompose()
             lastdoc = ourspan.get_text(strip=True)
+        if '(Opens new window)' in lastdoc:
+            lastdoc = lastdoc.replace('(Opens new window)', '')
         latestinfo.append(lastdoc)
         lastdocdate = mostrecentrow.find_all('td')[-1].get_text(strip=True)
         latestinfo.append(lastdocdate)

@@ -180,6 +180,8 @@ for case in newclosedcases:
         pdfreason = "Failure to provide respondent address"
     elif 'payment for the claim failed' in pdftext:
         pdfreason = "Payment for the claim failed"
+    elif 'request from the claimant' in pdftext:
+        pdfreason = "Request from claimant"
     else:
         pdfreason = "Unknown/cannot extract"
     closedcasesdict[case]["PDF reason"] = pdfreason
@@ -207,13 +209,14 @@ htmlreport.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
 # summary total
 htmlreport.write('<p>Number of closed cases: ' + str(len(closedcasesdatalist)) + '</p>')
 htmlreport.write('<table>' + '\n' +
-    '<tr><th>Docket</th><th>Orders to amend</th><th>Orders certifying claim</th><th>Opt outs</th>' +
+    '<tr><th>Docket</th><th>Caption</th><th>Orders to amend</th><th>Orders certifying claim</th><th>Opt outs</th>' +
     '<th>Inferred reason</th><th>PDF reason</th><th>Tallied reason</th><th>Claimant law firm</th></tr>')
 
 allreasons = []
 for case in allclosedcases:
     htmlreport.write('<tr>' +
     '<td>' + '<a href="' + closedcasesdict[case]["Docket URL"] + '">' + case + '</a></td>' +
+    '<td>' + casedatadict[case]["Caption"] + '</a></td>' +
     '<td>' + str(closedcasesdict[case]["Amend orders"]) + '</a></td>' +
     '<td>' + str(closedcasesdict[case]["Certifying orders"]) + '</a></td>' +
     '<td>' + str(closedcasesdict[case]["Opt outs"]) + '</a></td>' +
