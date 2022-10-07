@@ -207,11 +207,13 @@ def getlatest(docketurl):
         if len(lastdoccell.find_all("span", class_=re.compile("document-restricted"))) != 0:
             ourspan = lastdoccell.find("span", class_=re.compile("document-restricted"))
             lastdoc = ourspan.get_text(strip=True)
-        else:
+        elif len(lastdoccell.find_all("span", class_=re.compile("document-link-title"))) !=0:
             ourspan = lastdoccell.find("span", class_=re.compile("document-link-title"))
             srspan = ourspan.find(class_='sr-only')
             srspan.decompose()
             lastdoc = ourspan.get_text(strip=True)
+        else:
+            lastdoc = lastdoccell.get_text(strip=True)
         if '(Opens new window)' in lastdoc:
             lastdoc = lastdoc.replace('(Opens new window)', '')
         latestinfo.append(lastdoc)

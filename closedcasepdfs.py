@@ -1,4 +1,5 @@
 import csv, requests, bs4, PyPDF2
+from datetime import date
 
 def getdocketnum(row):
     cells = []
@@ -116,6 +117,8 @@ newclosedcases = []
 for case in allclosedcases:
     if case not in caseswehave:
         newclosedcases.append(case)
+print("New closed cases:")
+print(newclosedcases)
 
 # start collecting info about new closed cases in the closed cases dictionary
 for case in newclosedcases:
@@ -176,12 +179,18 @@ for case in newclosedcases:
         pdfreason = "Respondent(s) opted out"
     elif 'second amended claim' in pdftext:
         pdfreason = "3 tries and still noncompliant"
-    elif 'provide the respondent’s address' in pdftext:
+    elif 'provide the respondent’s address' in pdftext or "did not receive the respondent's address" in pdftext:
         pdfreason = "Failure to provide respondent address"
     elif 'payment for the claim failed' in pdftext:
         pdfreason = "Payment for the claim failed"
     elif 'request from the claimant' in pdftext:
         pdfreason = "Request from claimant"
+    elif 'did not file a proof of service or waiver of service' in pdftext:
+        pdfreason = "Proof of service not filed"
+    elif 'No amended claim was filed in the time allowed' in pdftext:
+        pdfreason = "Failure to amend"
+    elif 'applied to register the copyright in the work and had filed a new' in pdftext:
+        pdfreason = "Work wasn't registered before; claimant has filed new claim"
     else:
         pdfreason = "Unknown/cannot extract"
     closedcasesdict[case]["PDF reason"] = pdfreason
@@ -206,13 +215,32 @@ htmlreport.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
     '\n' +
     '</style>' + '\n' + '</head>' + '\n' + '<body>' + '\n')
 
+htmlreport.write('<p>Run date: ' + str(date.today()) + '</p>')
+
 # summary total
 htmlreport.write('<p>Number of closed cases: ' + str(len(closedcasesdatalist)) + '</p>')
+
+# table of reasons
+allreasons = []
+for case in allclosedcases:
+    allreasons.append(closedcasesdict[case]["Tallied reason"])
+
+htmlreport.write('<p>Totals</p>')
+setofreasons = set(allreasons)
+dedupedreasons = list(setofreasons)
+htmlreport.write('<table>' + '\n')
+for reason in dedupedreasons:
+    htmlreport.write('<tr>' +
+    '<td>' + reason + '</td>' +
+    '<td>' + str(allreasons.count(reason)) + '</td>'
+    '</tr> \n')
+htmlreport.write('</table> \n')
+
+# table of cases
+htmlreport.write('<p>Cases</p>')
 htmlreport.write('<table>' + '\n' +
     '<tr><th>Docket</th><th>Caption</th><th>Orders to amend</th><th>Orders certifying claim</th><th>Opt outs</th>' +
     '<th>Inferred reason</th><th>PDF reason</th><th>Tallied reason</th><th>Claimant law firm</th></tr>')
-
-allreasons = []
 for case in allclosedcases:
     htmlreport.write('<tr>' +
     '<td>' + '<a href="' + closedcasesdict[case]["Docket URL"] + '">' + case + '</a></td>' +
@@ -224,19 +252,6 @@ for case in allclosedcases:
     '<td>' + closedcasesdict[case]["PDF reason"] + '</a></td>' +
     '<td>' + closedcasesdict[case]["Tallied reason"] + '</a></td>' +
     '<td>' + closedcasesdict[case]["Claimant law firm"] + '</a></td>' +
-    '</tr> \n')
-    allreasons.append(closedcasesdict[case]["Tallied reason"])
-htmlreport.write('</table> \n')
-
-htmlreport.write('<p>Totals</p>')
-
-setofreasons = set(allreasons)
-dedupedreasons = list(setofreasons)
-htmlreport.write('<table>' + '\n')
-for reason in dedupedreasons:
-    htmlreport.write('<tr>' +
-    '<td>' + reason + '</td>' +
-    '<td>' + str(allreasons.count(reason)) + '</td>'
     '</tr> \n')
 htmlreport.write('</table> \n')
 
