@@ -49,6 +49,14 @@ amendtablerows = amendlistsoup.tbody.find_all('tr')
 for row in amendtablerows:
     amendedcasesall.append(getdocketnum(row))
     amendordersall.append([getdocketnum(row), getdatefiled(row)])
+# Get the next hundred
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A52&offset=100&max=100')
+res.raise_for_status()
+amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+amendtablerows = amendlistsoup.tbody.find_all('tr')
+for row in amendtablerows:
+    amendedcasesall.append(getdocketnum(row))
+    amendordersall.append([getdocketnum(row), getdatefiled(row)])
 
 # output list of cases w orders to amend to a text file for closedcases.py
 amendfile = open('amendfile.txt', 'w')
@@ -70,7 +78,7 @@ for order in amendordersall:
         amendordersdeduped[order[0]] = order[1][:10]
         amendorderschecking.append(order[0])
 
-# Get the case numbers for the (first 100) cases with certified claims
+# Get the case numbers for the (first 100) cases with certified claims, orders of each type
 print("Getting orders certifying claims")
 certcasesall = []
 certordersall = []
@@ -78,6 +86,8 @@ res = requests.get('https://dockets.ccb.gov/search/documents?docTypeGroup=type%3
 res.raise_for_status()
 certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 certlistrows = certlistsoup.tbody.find_all('tr')
+print("Number of orders at first OCC URL")
+print(str(len(certlistrows)))
 for row in certlistrows:
     certcasesall.append(getdocketnum(row))
     certordersall.append([getdocketnum(row), getdatefiled(row)])
@@ -85,6 +95,8 @@ res = requests.get('https://dockets.ccb.gov/search/documents?docTypeGroup=type%3
 res.raise_for_status()
 certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 certlistrows = certlistsoup.tbody.find_all('tr')
+print("Number of orders at second OCC URL")
+print(str(len(certlistrows)))
 for row in certlistrows:
     certcasesall.append(getdocketnum(row))
     certordersall.append([getdocketnum(row), getdatefiled(row)])
@@ -117,11 +129,12 @@ allcases = amendednotcert + certnotamended + amendedandcert
 allcases.sort()
 latestcasewithorder = int(allcases[-1][7:])
 
-# get dates of amended claims for cases with both orders to amend and certified claims
-print("Getting some amended claims")
-amendedclaimslatercert = {}
-for case in amendedandcert:
-    amendedclaimslatercert[case] = getamendedclaimdate(casedatadict[case]["Docket URL"])
+# Get dates of amended claims for cases with both orders to amend and certified claims
+#Commented out because no longer reporting on time between amended claim and order certifying claim
+# print("Getting some amended claims")
+# amendedclaimslatercert = {}
+# for case in amendedandcert:
+#     amendedclaimslatercert[case] = getamendedclaimdate(casedatadict[case]["Docket URL"])
 
 # Get the case numbers for the (first 100) cases from the closed case list
 print("Getting closed cases")
@@ -132,6 +145,10 @@ closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
 for row in closedtablerows:
     allclosedcases.append(getdocketnumclosedlist(row))
+# Temporary fix for 141 not being in the closed case list on the CCB site. Can delete when this number matches html
+print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
+if '22-CCB-0141' not in allclosedcases:
+    allclosedcases.append('22-CCB-0141')
 allclosedcases.sort()
 
 # Get a list of cases that have OTAs or OCCs that are now closed
@@ -230,6 +247,7 @@ latestcasewithorder = int(allcases[-1][7:])
 divfifty = latestcasewithorder / 50
 numberofbatches = math.ceil(divfifty)
 averagesbybatch = []
+batchsizes = []
 batchnum = 0
 while batchnum < numberofbatches:
     batchnum += 1
@@ -244,6 +262,8 @@ while batchnum < numberofbatches:
                 listname.append(timestoaction[case])
     batchavg = mean(listname)
     averagesbybatch.append(batchavg)
+    sizeofbatch = len(listname)
+    batchsizes.append(sizeofbatch)
 
 # Output dictionaries as csv
 with open('otasandoccs.csv', 'w') as csvfile:
@@ -273,6 +293,8 @@ htmlreport.write('<table>' +
     '<tr><td>Cases with OTAS</td><td>' + str(len(amendedcases)) + '</td></tr>' +
     '<tr><td>Cases with both</td><td>' + str(len(amendedandcert)) + '</td></tr>' +
     '</table>')
+
+htmlreport.write('<p>Number of claims filed: ' + str(len(casedatadict)) + '</p>')
 
 numstatuscert = len(statuscert)
 numstatuswaiting = len(statuswaiting)
@@ -311,16 +333,31 @@ timestoall = timestoota + timestoocc
 avgtimesall = int(mean(timestoall))
 htmlreport.write('<p>Average number of days from claim to first OTA or OCC: ' + str(avgtimesall) + '<br/>' +
     'Just orders to amend: ' + str(avgotatime) + '<br/>' +
-    'Just orders certifying claim: ' + str(avgocctime) + '<br/>' +
-    'So far on...' + '<br/>' +
-    'Claims 1-50: ' + str(averagesbybatch[0])[:2] + '<br/>' +
-    'Claims 51-100: ' + str(averagesbybatch[1])[:2] + '<br/>' +
-    'Claims 101-150: ' + str(averagesbybatch[2])[:2] + '<br/>' +
-    'Claims 151-200: ' + str(averagesbybatch[3])[:2] + '<br/>' +
-    '</p>')
+    'Just orders certifying claim: ' + str(avgocctime) + '</p>' +
+    '<p>By order of claim:</p>' + '<ul>' +
+    '<li>Claims 1-50 (based on ' + str(batchsizes[0]) + ' of 50 cases*): ' + str(int(averagesbybatch[0])) + ' days</li>' +
+    '<li>Claims 51-100 (' + str(batchsizes[1]) + ' of 50 cases): ' + str(int(averagesbybatch[1])) + ' days</li>' +
+    '<li>Claims 101-150 (' + str(batchsizes[2]) + ' of 50 cases): ' + str(int(averagesbybatch[2])) + ' days</li>' +
+    '<li>Claims 151-200 (' + str(batchsizes[3]) + ' of 50 cases): ' + str(int(averagesbybatch[3])) + ' days</li>' +
+    "</ul><p>*For cases where a time could be calculated. A time can't be calculated if no OTA or OCC has been filed yet, " +
+    "or if an OTA or OCC was filed but the claim wasn't made public. Some cases are closed before an OTA or OCC is filed, e.g. at the " +
+    "request of the claimant, for failure to provide respondent address, etc.</p>")
 
-htmlreport.write('<p><a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A86">' +
-    'Link to orders to pay second filing fee</a> (i.e. Cases in which the claim has been certified and the opt out window has passed)</p>')
+# Closed cases
+htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/closed?max=100">closed cases</a> ' +
+    '(so far, all have been dismissed without prejudice): ' +
+    str(len(allclosedcases)) + '</p>')
+
+# Cases with scheduling orders
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16')
+res.raise_for_status()
+activecasesoup = bs4.BeautifulSoup(res.text, 'lxml')
+activecaserows = activecasesoup.find_all('tr')
+activecases = len(activecaserows) - 1
+htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16">live cases</a> ' +
+    '(cases with scheduling orders; the opt out window has passed or the case has been referred from a district court and the ' +
+    'respondent has waived the right to opt out): ' +
+    str(activecases) + '</p>')
 
 htmlreport.write('<table><tr><th>Docket No.</th><th>Caption</th><th>Claim date</th>' +
     '<th>1st OTA</th><th>1st OCC</th><th>Days to 1st action</th><th>Current status</th>' +

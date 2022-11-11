@@ -175,11 +175,12 @@ print("Extracting text from dismissal order PDFs")
 for case in newclosedcases:
     filename = closedcasesdict[case]["PDF filename"]
     pdftext = getpdftext(filename)
+    print(pdftext)
     if 'opt-out' in pdftext:
         pdfreason = "Respondent(s) opted out"
     elif 'second amended claim' in pdftext:
         pdfreason = "3 tries and still noncompliant"
-    elif 'provide the respondent’s address' in pdftext or "did not receive the respondent's address" in pdftext:
+    elif "did not receive  the respondent's address" in pdftext or "did not receive the respondent's address" in pdftext:
         pdfreason = "Failure to provide respondent address"
     elif 'payment for the claim failed' in pdftext:
         pdfreason = "Payment for the claim failed"
@@ -218,16 +219,34 @@ htmlreport.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
 htmlreport.write('<p>Run date: ' + str(date.today()) + '</p>')
 
 # summary total
-htmlreport.write('<p>Number of closed cases: ' + str(len(closedcasesdatalist)) + '</p>')
+htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/closed?max=100">closed cases</a>: ' +
+    str(len(closedcasesdatalist)) + '</p>')
+
+# compare with active cases
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16')
+res.raise_for_status()
+activecasesoup = bs4.BeautifulSoup(res.text, 'lxml')
+activecaserows = activecasesoup.find_all('tr')
+activecases = len(activecaserows) - 1
+htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16">live cases</a> ' +
+    '(cases with scheduling orders): ' +
+    str(activecases) + '</p>')
+
+# Temporary fix for 141 not being in the closed case list on the CCB site. Can delete when this number matches html
+print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
+if '22-CCB-0141' not in allclosedcases:
+    allclosedcases.append('22-CCB-0141')
+    allclosedcases.sort()
 
 # table of reasons
 allreasons = []
 for case in allclosedcases:
     allreasons.append(closedcasesdict[case]["Tallied reason"])
 
-htmlreport.write('<p>Totals</p>')
+htmlreport.write('<p>Total number of claims dismissed for each reason</p>')
 setofreasons = set(allreasons)
 dedupedreasons = list(setofreasons)
+dedupedreasons.sort(reverse = True)
 htmlreport.write('<table>' + '\n')
 for reason in dedupedreasons:
     htmlreport.write('<tr>' +

@@ -1,12 +1,20 @@
 import requests, bs4, re, csv, math
 
-lastweek = open('casedata.csv', 'r')
+# Save list of states to compare to what's after the comma in Claimant city in getcasedetails
+listofstates = (["AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DE", "FL", "GA", "HI",
+    "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO",
+    "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR",
+    "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY", "DC"])
 
+# Save list of cases to stop looking at, even though no claim available
+donotcheck = ['22-CCB-0016', '22-CCB-0092', '22-CCB-0096', '22-CCB-0105', '22-CCB-0175']
+
+lastweek = open('casedata.csv', 'r')
 # Grab cases where claim details have already been collected in local file
 reader = csv.DictReader(lastweek)
 casedatalist = list()
 for case in reader:
-    if case["Claim URL"][:4] == "http":
+    if case["Claim URL"][:4] == "http" or case["Docket No."] in donotcheck:
         casedatalist.append(case)
 lastweek.close()
 
@@ -18,10 +26,17 @@ toprow = caselistsoup.tbody.find('tr')
 lastdocket = toprow.find_all('td')[1].get_text(strip=True)
 lastdocketnum = int(lastdocket[7:])
 
-# Get a list of the dockets we already have
+# Get a list of the dockets we already have, or that are closed
 docketswehave = []
 for case in casedatalist:
         docketswehave.append(case.get("Docket No."))
+
+# Get a list of closed cases from last week
+closedcasescsv = open('closedcases.csv', 'r')
+reader = csv.DictReader(closedcasescsv)
+closedcaseslist = []
+for dictionary in reader:
+    closedcaseslist.append(dictionary["Docket No."])
 
 #Get a list of dockets we need
 docketsweneed = []
@@ -157,6 +172,19 @@ def getcasedetails(claimurl, fullcaption):
     damagesdiv = damagesparentdiv.contents[1]
     damages = damagesdiv.get_text(strip=True)
     details.append(damages[:1200])
+    citydiv = claimsoup.find(attrs={'data-field' : 'partialAddress'})
+    if len(citydiv.find_all('br')) > 0:
+        cityplusjunk = citydiv.contents
+        claimantcity = cityplusjunk[0].get_text(strip=True) + ", " + cityplusjunk[2].get_text(strip=True)
+    else:
+        claimantcity = citydiv.get_text(strip=True)
+    details.append(claimantcity)
+    splitcity = claimantcity.split(",")
+    if splitcity[1][1:] in listofstates:
+        claimantcountry = "USA"
+    else:
+        claimantcountry = splitcity[1][1:]
+    details.append(claimantcountry)
     return details
 
 # to retrieve details that are only asked of the claimant in infringement claims
@@ -216,6 +244,8 @@ def getlatest(docketurl):
             lastdoc = lastdoccell.get_text(strip=True)
         if '(Opens new window)' in lastdoc:
             lastdoc = lastdoc.replace('(Opens new window)', '')
+        if 'Toggle tooltip (Keyboard shortcut: "Crtl+Enter" opens and "Escape" or "Delete" dismiss)' in lastdoc:
+            lastdoc = lastdoc.replace('Toggle tooltip (Keyboard shortcut: "Crtl+Enter" opens and "Escape" or "Delete" dismiss)', '')
         latestinfo.append(lastdoc)
         lastdocdate = mostrecentrow.find_all('td')[-1].get_text(strip=True)
         latestinfo.append(lastdocdate)
@@ -223,7 +253,7 @@ def getlatest(docketurl):
 
 print("Getting new cases")
 
-# Collect data for cases new this week
+# Collect data for cases new this week, and recent cases where we dedn't have a claim for before
 for docket in docketsweneed:
     print(docket)
     newcase = {}
@@ -241,13 +271,15 @@ for docket in docketsweneed:
     if capandclaiminfo[3][0:4] == 'http':
         casedetails = getcasedetails(capandclaiminfo[3], capandclaiminfo[0])
     else:
-        casedetails = ["Not available", "Not available", "See caption", "Not available", "See caption", "Not available"]
+        casedetails = ["Not available", "Not available", "See caption", "Not available", "See caption", "Not available", "Not available", "Not available"]
     newcase["Claim types"] = casedetails[0]
     newcase["Smaller?"] = casedetails[1]
     newcase["Claimant"] = casedetails[2]
     newcase["Claimant law firm"] = casedetails[3]
     newcase["Respondent"] = casedetails[4]
     newcase["Relief sought"] = casedetails[5]
+    newcase["Claimant city"] = casedetails[6]
+    newcase["Claimant country"] = casedetails[7]
     if newcase["Claim types"][0:12] == "infringement":
         infrdetails = getinfringementdetails(capandclaiminfo[3])
     else:
@@ -263,13 +295,13 @@ for docket in docketsweneed:
 casedatalist.sort(key=lambda x: x['Docket No.'], reverse=True)
 
 print("Fetching latest docs filed")
-
 # Update Latest doc
 for case in casedatalist:
-    print(case["Docket No."])
-    latestinfo = getlatest(case["Docket URL"])
-    case["Latest doc"] = latestinfo[0]
-    case["Latest doc date"] = latestinfo[1]
+    if case["Docket No."] not in closedcaseslist:
+        print(case["Docket No."])
+        latestinfo = getlatest(case["Docket URL"])
+        case["Latest doc"] = latestinfo[0]
+        case["Latest doc date"] = latestinfo[1]
 
 with open('casedata.csv', 'w') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames = casedatalist[0].keys())
