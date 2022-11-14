@@ -18,3 +18,5 @@ Descriptions of individual files, in alphabetical order:
 * otasandoccs.py - script that collects all the info on cases with orders to amend and/or orders certifying claims, plus does some math
    about how long things are taking, how unrepresented claimants are faring compared to represented ones, current status of claims, etc.
 * runemall.py - short script to make everything happen with one click
+
+You can contact me at bibliobaloney@duck.com with questions.
