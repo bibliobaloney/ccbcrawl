@@ -168,9 +168,12 @@ def getcasedetails(claimurl, fullcaption):
     else:
         respondent = claimsoup.find(text=re.compile(capclaimant)).parent.get_text(strip=True)
     details.append(respondent)
-    damagesparentdiv = claimsoup.find(attrs={'data-field' : 'harm'})
-    damagesdiv = damagesparentdiv.contents[1]
-    damages = damagesdiv.get_text(strip=True)
+    if len(claimsoup.find_all(attrs={'data-field' : 'harm'})) == 0:
+        damages = "NA"
+    else:
+        damagesparentdiv = claimsoup.find(attrs={'data-field' : 'harm'})
+        damagesdiv = damagesparentdiv.contents[1]
+        damages = damagesdiv.get_text(strip=True)
     details.append(damages[:1200])
     citydiv = claimsoup.find(attrs={'data-field' : 'partialAddress'})
     if len(citydiv.find_all('br')) > 0:

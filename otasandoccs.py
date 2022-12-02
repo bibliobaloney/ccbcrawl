@@ -146,10 +146,10 @@ closedtablerows = closedlistsoup.tbody.find_all('tr')
 for row in closedtablerows:
     allclosedcases.append(getdocketnumclosedlist(row))
 # Temporary fix for 141 not being in the closed case list on the CCB site. Can delete when this number matches html
-print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
-if '22-CCB-0141' not in allclosedcases:
-    allclosedcases.append('22-CCB-0141')
-allclosedcases.sort()
+# print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
+# if '22-CCB-0141' not in allclosedcases:
+#     allclosedcases.append('22-CCB-0141')
+# allclosedcases.sort()
 
 # Get a list of cases that have OTAs or OCCs that are now closed
 statusclosed = []
@@ -339,6 +339,7 @@ htmlreport.write('<p>Average number of days from claim to first OTA or OCC: ' + 
     '<li>Claims 51-100 (' + str(batchsizes[1]) + ' of 50 cases): ' + str(int(averagesbybatch[1])) + ' days</li>' +
     '<li>Claims 101-150 (' + str(batchsizes[2]) + ' of 50 cases): ' + str(int(averagesbybatch[2])) + ' days</li>' +
     '<li>Claims 151-200 (' + str(batchsizes[3]) + ' of 50 cases): ' + str(int(averagesbybatch[3])) + ' days</li>' +
+    '<li>Claims 201-250 (' + str(batchsizes[4]) + ' of 50 cases): ' + str(int(averagesbybatch[4])) + ' days</li>' +
     "</ul><p>*For cases where a time could be calculated. A time can't be calculated if no OTA or OCC has been filed yet, " +
     "or if an OTA or OCC was filed but the claim wasn't made public. Some cases are closed before an OTA or OCC is filed, e.g. at the " +
     "request of the claimant, for failure to provide respondent address, etc.</p>")
@@ -351,13 +352,26 @@ htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/closed?ma
 # Cases with scheduling orders
 res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16')
 res.raise_for_status()
-activecasesoup = bs4.BeautifulSoup(res.text, 'lxml')
-activecaserows = activecasesoup.find_all('tr')
-activecases = len(activecaserows) - 1
-htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16">live cases</a> ' +
-    '(cases with scheduling orders; the opt out window has passed or the case has been referred from a district court and the ' +
-    'respondent has waived the right to opt out): ' +
-    str(activecases) + '</p>')
+schedulingordercasesoup = bs4.BeautifulSoup(res.text, 'lxml')
+schedulingordercaserows = schedulingordercasesoup.find_all('tr')
+caseswithschedulingorders = []
+#for some reason this one is grabbing the header rows and the others didn't
+schedulingordercaserows.pop(0)
+for row in schedulingordercaserows:
+    caseswithschedulingorders.append(getdocketnum(row))
+activecases = []
+subseqclosed = []
+for case in caseswithschedulingorders:
+    if case in allclosedcases:
+        subseqclosed.append(case)
+    else:
+        activecases.append(case)
+htmlreport.write('<p><a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16">Cases with scheduling orders</a>: ' +
+    str(len(caseswithschedulingorders)) +
+    '<br/>(the opt out window has passed (or the case has been referred from a district court and the ' +
+    'respondent has waived the right to opt out) and the case has moved to the active phase)</p>' +
+    '<ul><li>Cases with scheduling orders that have since closed: ' + str(len(subseqclosed)) + '&emsp;' + str(subseqclosed) + '</li>' +
+    '<li>Cases still active: ' + str(len(activecases)) + '&emsp;' + str(activecases) + '</li></ul>')
 
 htmlreport.write('<table><tr><th>Docket No.</th><th>Caption</th><th>Claim date</th>' +
     '<th>1st OTA</th><th>1st OCC</th><th>Days to 1st action</th><th>Current status</th>' +

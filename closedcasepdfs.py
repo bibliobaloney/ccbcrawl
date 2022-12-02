@@ -228,15 +228,15 @@ res.raise_for_status()
 activecasesoup = bs4.BeautifulSoup(res.text, 'lxml')
 activecaserows = activecasesoup.find_all('tr')
 activecases = len(activecaserows) - 1
-htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16">live cases</a> ' +
-    '(cases with scheduling orders): ' +
+htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16"> cases ' +
+    'where a scheduling order has been filed</a>: ' +
     str(activecases) + '</p>')
 
-# Temporary fix for 141 not being in the closed case list on the CCB site. Can delete when this number matches html
+# Check to make sure this number matches html
 print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
-if '22-CCB-0141' not in allclosedcases:
-    allclosedcases.append('22-CCB-0141')
-    allclosedcases.sort()
+# if '22-CCB-0141' not in allclosedcases:
+#     allclosedcases.append('22-CCB-0141')
+#     allclosedcases.sort()
 
 # table of reasons
 allreasons = []
