@@ -2,6 +2,7 @@ import requests, bs4, re, csv, math
 from datetime import datetime, date
 from statistics import mean
 
+# Import the big pile of case data
 casedata = open('casedata.csv', 'r')
 reader = csv.DictReader(casedata)
 casedatadict = {}
@@ -9,6 +10,15 @@ for dictionary in reader:
     casedictname = dictionary["Docket No."]
     casedatadict[casedictname] = dictionary
 casedata.close()
+
+# Import the data about problems cited in orders to amend
+otareasonscsv = open('otareasons.csv', 'r')
+reader = csv.DictReader(otareasonscsv)
+otareasonsdict = {}
+for dictionary in reader:
+    documentnum = dictionary["Document No."]
+    otareasonsdict[documentnum] = dictionary
+otareasonscsv.close()
 
 def getdocketnum(row):
     cells = []
@@ -145,11 +155,19 @@ closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
 for row in closedtablerows:
     allclosedcases.append(getdocketnumclosedlist(row))
+# Get the next 100
+res = requests.get('https://dockets.ccb.gov/search/closed?&offset=100&max=100')
+res.raise_for_status()
+closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+closedtablerows = closedlistsoup.tbody.find_all('tr')
+for row in closedtablerows:
+    allclosedcases.append(getdocketnumclosedlist(row))
+allclosedcases.sort()
 # Temporary fix for 141 not being in the closed case list on the CCB site. Can delete when this number matches html
 # print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
 # if '22-CCB-0141' not in allclosedcases:
 #     allclosedcases.append('22-CCB-0141')
-# allclosedcases.sort()
+allclosedcases.sort()
 
 # Get a list of cases that have OTAs or OCCs that are now closed
 statusclosed = []
@@ -170,6 +188,10 @@ augota = 0
 augocc = 0
 sepota = 0
 sepocc = 0
+octota = 0
+octocc = 0
+novota = 0
+novocc = 0
 
 # Build the list of dictionaries, and populate the lists
 otasandoccsdicts = []
@@ -226,6 +248,16 @@ for case in allcases:
             sepota += 1
         else:
             sepocc += 1
+    elif firstorderdate[:2] == "10":
+        if firstordertype == "Amend":
+            octota += 1
+        else:
+            octocc += 1
+    elif firstorderdate[:2] == "11":
+        if firstordertype == "Amend":
+            novota += 1
+        else:
+            novocc += 1
     if case in statusclosed:
         newcase["Current status"] = "Closed"
     elif case in certifiedcases:
@@ -265,6 +297,21 @@ while batchnum < numberofbatches:
     sizeofbatch = len(listname)
     batchsizes.append(sizeofbatch)
 
+# Get lists of cases with foreign claimants and respondents
+foreignclaimants = []
+for case in casedatadict:
+    notnecessarilyforeign = ['USA', 'Not available']
+    if casedatadict[case]["Claimant country"] not in notnecessarilyforeign:
+        foreignclaimants.append(casedatadict[case]["Docket No."])
+foreignrespondentswithdupes = []
+for order in otareasonsdict:
+    if otareasonsdict[order]["Foreign Respondent"] == '1':
+        foreignrespondentswithdupes.append(otareasonsdict[order]["Docket No."])
+foreignset = set(foreignrespondentswithdupes)
+foreignrespondents = list(foreignset)
+foreignboth = [x for x in foreignclaimants if x in foreignrespondents]
+foreignboth.sort()
+
 # Output dictionaries as csv
 with open('otasandoccs.csv', 'w') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames = otasandoccsdicts[0].keys())
@@ -272,7 +319,7 @@ with open('otasandoccs.csv', 'w') as csvfile:
     writer.writerows(otasandoccsdicts)
 csvfile.close()
 
-# Output html summary and table
+# Begin writing html report
 htmlreport = open("orderstoamendorcertify.html", 'w')
 htmlreport.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
     '<head><title>CCB data - orders to amend and orders certifying claims</title>' + '\n' +
@@ -284,6 +331,7 @@ htmlreport.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
     '</style>' + '\n' + '</head>' + '\n' + '<body>' + '\n')
 
 htmlreport.write('<p>Run date: ' + str(date.today()) + '</p>')
+htmlreport.write('<p>Number of claims filed: ' + str(len(casedatadict)) + '</p>')
 
 # summary totals
 htmlreport.write('<table>' +
@@ -294,8 +342,6 @@ htmlreport.write('<table>' +
     '<tr><td>Cases with both</td><td>' + str(len(amendedandcert)) + '</td></tr>' +
     '</table>')
 
-htmlreport.write('<p>Number of claims filed: ' + str(len(casedatadict)) + '</p>')
-
 numstatuscert = len(statuscert)
 numstatuswaiting = len(statuswaiting)
 numstatusclosed = len(statusclosed)
@@ -303,9 +349,9 @@ numall = len(allcases)
 pctcert = (numstatuscert/numall) * 100
 pctwaiting = (numstatuswaiting/numall) * 100
 pctclosed = (numstatusclosed/numall) * 100
-htmlreport.write('<p>Current status of cases with an OTA or OCC (' + str(numall) + ') :</p>' +
-    '<table><td>Certified, not dismissed</td><td>' + str(numstatuscert) + '</td><td>' + str(pctcert)[:2] + '%</td></tr>' +
-    '<td>Awaiting amendment/certification</td><td>' + str(numstatuswaiting) + '</td><td>' + str(pctwaiting)[:2] + '%</td></tr>' +
+htmlreport.write('<p>Current status of the subset of cases with an OTA or OCC (' + str(numall) + ') :</p>' +
+    '<table><td>Certified, still open</td><td>' + str(numstatuscert) + '</td><td>' + str(pctcert)[:2] + '%</td></tr>' +
+    '<td>Awaiting claimant amendment or CCB certification</td><td>' + str(numstatuswaiting) + '</td><td>' + str(pctwaiting)[:2] + '%</td></tr>' +
     '<td>Closed</td><td>' + str(numstatusclosed) + '</td><td>' + str(pctclosed)[:2] + '%</td></tr>' +
     '</table>')
 
@@ -345,7 +391,7 @@ htmlreport.write('<p>Average number of days from claim to first OTA or OCC: ' + 
     "request of the claimant, for failure to provide respondent address, etc.</p>")
 
 # Closed cases
-htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/closed?max=100">closed cases</a> ' +
+htmlreport.write('<p>Number of <a href="/closedcases.html">closed cases</a> ' +
     '(so far, all have been dismissed without prejudice): ' +
     str(len(allclosedcases)) + '</p>')
 
@@ -372,6 +418,12 @@ htmlreport.write('<p><a href="https://dockets.ccb.gov/search/documents?search=&d
     'respondent has waived the right to opt out) and the case has moved to the active phase)</p>' +
     '<ul><li>Cases with scheduling orders that have since closed: ' + str(len(subseqclosed)) + '&emsp;' + str(subseqclosed) + '</li>' +
     '<li>Cases still active: ' + str(len(activecases)) + '&emsp;' + str(activecases) + '</li></ul>')
+
+htmlreport.write('<p>Number of cases with a foreign claimant: ' + str(len(foreignclaimants)) +
+    '<br/>Number of cases with a foreign respondent: ' + str(len(foreignrespondents)) +
+    '<br/>Number of cases with both: ' + str(len(foreignboth)) + '&emsp;' + str(foreignboth) +
+    '<br/>Info on claimaint country is from the weekly casedata CSVs, foreign respondent info is from the ' +
+    'otareasons CSVs. CSVs are available in <a href="https://drive.google.com/drive/folders/1lPheWjD9ZIOLd_ZVKUu8RcoaAt9C05iE">Google Drive</a>.</p>')
 
 htmlreport.write('<table><tr><th>Docket No.</th><th>Caption</th><th>Claim date</th>' +
     '<th>1st OTA</th><th>1st OCC</th><th>Days to 1st action</th><th>Current status</th>' +
@@ -403,6 +455,8 @@ htmlreport.write('</table>')
 alljulorders = julota + julocc
 allaugorders = augota + augocc
 allseporders = sepota + sepocc
+alloctorders = octota + octocc
+allnovorders = novota + novocc
 htmlreport.write('<p>Types of first action by month</p>')
 htmlreport.write('<table><tr><th>Month</th><th>OTAs</th><th>OCCs</th></tr>' +
     '<tr><td>July</td><td>' + str(julota) + ' (' + str((julota/alljulorders) * 100)[:2] + '%)</td><td>' +
@@ -411,6 +465,10 @@ htmlreport.write('<table><tr><th>Month</th><th>OTAs</th><th>OCCs</th></tr>' +
     str(augocc) + ' (' + str((augocc/allaugorders) * 100)[:2] + '%)</td></tr>' +
     '<tr><td>September</td><td>' + str(sepota) + ' (' + str((sepota/allseporders) * 100)[:2] + '%)</td><td>' +
     str(sepocc) + ' (' + str((sepocc/allseporders) * 100)[:2] + '%)</td></tr>' +
+    '<tr><td>October</td><td>' + str(octota) + ' (' + str((octota/alloctorders) * 100)[:2] + '%)</td><td>' +
+    str(octocc) + ' (' + str((octocc/alloctorders) * 100)[:2] + '%)</td></tr>' +
+    '<tr><td>November</td><td>' + str(novota) + ' (' + str((novota/allnovorders) * 100)[:2] + '%)</td><td>' +
+    str(novocc) + ' (' + str((novocc/allnovorders) * 100)[:2] + '%)</td></tr>' +
     '</table>')
 
 htmlreport.write('\n' + '</body>' + '\n' + '</html>')

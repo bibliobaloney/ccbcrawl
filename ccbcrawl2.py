@@ -7,7 +7,7 @@ listofstates = (["AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DE", "FL", "GA", "HI
     "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY", "DC"])
 
 # Save list of cases to stop looking at, even though no claim available
-donotcheck = ['22-CCB-0016', '22-CCB-0092', '22-CCB-0096', '22-CCB-0105', '22-CCB-0175']
+donotcheck = ['22-CCB-0016', '22-CCB-0092', '22-CCB-0096', '22-CCB-0105', '22-CCB-0175', '22-CCB-0211']
 
 lastweek = open('casedata.csv', 'r')
 # Grab cases where claim details have already been collected in local file

@@ -85,6 +85,16 @@ for dictionary in reader:
     closedcasesdict[casedictname] = dictionary
 closedcasescsv.close()
 
+# Import the data from the reasons/orders to amend report
+print("Importing OTA info from CSV")
+otareasonscsv = open('otareasons.csv', 'r')
+reader = csv.DictReader(otareasonscsv)
+otasdict = {}
+for dictionary in reader:
+    documentnum = dictionary["Document No."]
+    otasdict[documentnum] = dictionary
+otareasonscsv.close()
+
 # get list of last week's closed cases
 caseswehave = []
 for case in closedcasesdict:
@@ -106,6 +116,13 @@ certfile.close()
 print("Getting closed cases")
 allclosedcases = []
 res = requests.get('https://dockets.ccb.gov/search/closed?max=100')
+res.raise_for_status()
+closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+closedtablerows = closedlistsoup.tbody.find_all('tr')
+for row in closedtablerows:
+    allclosedcases.append(getdocketnum(row))
+# Get the next 100
+res = requests.get('https://dockets.ccb.gov/search/closed?&offset=100&max=100')
 res.raise_for_status()
 closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
@@ -222,6 +239,12 @@ htmlreport.write('<p>Run date: ' + str(date.today()) + '</p>')
 htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/closed?max=100">closed cases</a>: ' +
     str(len(closedcasesdatalist)) + '</p>')
 
+# Check to make sure this number matches html
+print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
+# if '22-CCB-0141' not in allclosedcases:
+#     allclosedcases.append('22-CCB-0141')
+#     allclosedcases.sort()
+
 # compare with active cases
 res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16')
 res.raise_for_status()
@@ -232,13 +255,7 @@ htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/documents
     'where a scheduling order has been filed</a>: ' +
     str(activecases) + '</p>')
 
-# Check to make sure this number matches html
-print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
-# if '22-CCB-0141' not in allclosedcases:
-#     allclosedcases.append('22-CCB-0141')
-#     allclosedcases.sort()
-
-# table of reasons
+# table of reasons for dismissal
 allreasons = []
 for case in allclosedcases:
     allreasons.append(closedcasesdict[case]["Tallied reason"])
@@ -254,6 +271,46 @@ for reason in dedupedreasons:
     '<td>' + str(allreasons.count(reason)) + '</td>'
     '</tr> \n')
 htmlreport.write('</table> \n')
+
+# table of reasons in orders to amend
+foreignrespondent = 0
+registration = 0
+impermissibleclaim = 0
+relief = 0
+access = 0
+similarity = 0
+ownership = 0
+clarity = 0
+for case in otasdict:
+    if otasdict[case]["Foreign Respondent"] == '1':
+        foreignrespondent += 1
+    if otasdict[case]["Registration"] == '1':
+        registration += 1
+    if otasdict[case]["Impermissible Claim"] == '1':
+        impermissibleclaim += 1
+    if otasdict[case]["Relief Sought"] == '1':
+        relief += 1
+    if otasdict[case]["Access"] == '1':
+        access += 1
+    if otasdict[case]["Substantial Similarity"] == '1':
+        similarity += 1
+    if otasdict[case]["Ownership"] =='1':
+        ownership += 1
+    if otasdict[case]["Clarity"] == '1':
+        clarity += 1
+htmlreport.write('<p>Some common problems with claims from orders to amend (Note: more info is available in "otareasons" CSV files in ' +
+    '<a href="">Google Drive</a>.)</p>')
+htmlreport.write('<table>' + '\n' +
+    '<tr><th>Problem</th><th>Number of orders to amend citing the problem</th></tr>' +
+    '<tr><td>Claim filed against a foreign respondent</td><td>' + str(foreignrespondent) + '</td></tr>' +
+    '<tr><td>Infringement claim, lack of copyright registration</td><td>' + str(registration) + '</td></tr>' +
+    '<tr><td>Impermissible claim, e.g. patent or contract</td><td>' + str(impermissibleclaim) + '</td></tr>' +
+    '<tr><td>Problem with type or amount of relief sought</td><td>' + str(relief) + '</td></tr>' +
+    '<tr><td>Infringement claim, insufficient information about Access to allegedly infringed work</td><td>' + str(access) + '</td></tr>' +
+    '<tr><td>Infringement claim, insufficient allegation of Substantial Similarity</td><td>' + str(similarity) + '</td></tr>' +
+    '<tr><td>Infringement claim, insufficient allegation of Legal or Beneficial Ownership by claimant</td><td>' + str(ownership) + '</td></tr>' +
+    '<tr><td>Clarity (about some element, or the claim generally)</td><td>' + str(clarity) + '</td></tr>' +
+    '</table> \n')
 
 # table of cases
 htmlreport.write('<p>Cases</p>')
