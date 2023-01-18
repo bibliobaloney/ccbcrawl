@@ -26,6 +26,13 @@ f.close()
 code = compile(temp, 'closedcases.py', 'exec')
 exec(code)
 
+# Run active cases report
+f = open('activecases.py', 'r')
+temp = f.read()
+f.close()
+code = compile(temp, 'activecases.py', 'exec')
+exec(code)
+
 # Create big html table
 f = open('htmltable.py', 'r')
 temp = f.read()

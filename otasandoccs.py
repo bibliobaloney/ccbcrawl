@@ -110,6 +110,15 @@ print(str(len(certlistrows)))
 for row in certlistrows:
     certcasesall.append(getdocketnum(row))
     certordersall.append([getdocketnum(row), getdatefiled(row)])
+res = requests.get('https://dockets.ccb.gov/search/documents?docTypeGroup=type%3A113&offset=100&max=100')
+res.raise_for_status()
+certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+certlistrows = certlistsoup.tbody.find_all('tr')
+print("Number of orders at third OCC URL")
+print(str(len(certlistrows)))
+for row in certlistrows:
+    certcasesall.append(getdocketnum(row))
+    certordersall.append([getdocketnum(row), getdatefiled(row)])
 
 # output list of cases w orders to cert to a text file for closedcases.py
 certfile = open('certfile.txt', 'w')
@@ -394,30 +403,6 @@ htmlreport.write('<p>Average number of days from claim to first OTA or OCC: ' + 
 htmlreport.write('<p>Number of <a href="/closedcases.html">closed cases</a> ' +
     '(so far, all have been dismissed without prejudice): ' +
     str(len(allclosedcases)) + '</p>')
-
-# Cases with scheduling orders
-res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16')
-res.raise_for_status()
-schedulingordercasesoup = bs4.BeautifulSoup(res.text, 'lxml')
-schedulingordercaserows = schedulingordercasesoup.find_all('tr')
-caseswithschedulingorders = []
-#for some reason this one is grabbing the header rows and the others didn't
-schedulingordercaserows.pop(0)
-for row in schedulingordercaserows:
-    caseswithschedulingorders.append(getdocketnum(row))
-activecases = []
-subseqclosed = []
-for case in caseswithschedulingorders:
-    if case in allclosedcases:
-        subseqclosed.append(case)
-    else:
-        activecases.append(case)
-htmlreport.write('<p><a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16">Cases with scheduling orders</a>: ' +
-    str(len(caseswithschedulingorders)) +
-    '<br/>(the opt out window has passed (or the case has been referred from a district court and the ' +
-    'respondent has waived the right to opt out) and the case has moved to the active phase)</p>' +
-    '<ul><li>Cases with scheduling orders that have since closed: ' + str(len(subseqclosed)) + '&emsp;' + str(subseqclosed) + '</li>' +
-    '<li>Cases still active: ' + str(len(activecases)) + '&emsp;' + str(activecases) + '</li></ul>')
 
 htmlreport.write('<p>Number of cases with a foreign claimant: ' + str(len(foreignclaimants)) +
     '<br/>Number of cases with a foreign respondent: ' + str(len(foreignrespondents)) +

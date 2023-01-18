@@ -43,7 +43,7 @@ docketsweneed = []
 currentcheck = 1
 while currentcheck <= lastdocketnum:
     fourdigits = "{0:0>4}".format(currentcheck)
-    docketnum = "22-CCB-" + fourdigits
+    docketnum = "23-CCB-" + fourdigits
     if docketnum not in docketswehave:
         docketsweneed.append(docketnum)
     currentcheck += 1
@@ -205,11 +205,7 @@ def getinfringementdetails(claimurl):
         regdate = regdatediv.get_text(strip=True)
     infrdetails.append(regdate)
     worktypediv = claimsoup.find(attrs={'data-field' : 'workType'})
-    fullworktype = worktypediv.get_text(strip=True)
-    if len(fullworktype) > 20:
-        worktype = fullworktype[:20] + '...'
-    else:
-        worktype = fullworktype
+    worktype = worktypediv.get_text(strip=True)
     infrdetails.append(worktype)
     description = 'None given'
     if len(claimsoup.find_all(attrs={'data-field' : 'workDescription'})) != 0:

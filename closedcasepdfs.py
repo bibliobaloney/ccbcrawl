@@ -239,11 +239,16 @@ htmlreport.write('<p>Run date: ' + str(date.today()) + '</p>')
 htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/closed?max=100">closed cases</a>: ' +
     str(len(closedcasesdatalist)) + '</p>')
 
-# Check to make sure this number matches html
-print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
-# if '22-CCB-0141' not in allclosedcases:
-#     allclosedcases.append('22-CCB-0141')
-#     allclosedcases.sort()
+# Check to make sure numnbers match
+print("number of closed cases from initial allclosedcases list: " + str(len(allclosedcases)))
+fromdictlist = []
+for case in closedcasesdict:
+    fromdictlist.append(closedcasesdict[case]["Docket No."])
+print("number of closed cases from closedcasesdict: " + str(len(closedcasesdict)))
+print("Check to see if 107 is back in the closed case docket on CCB site; if so comment out line 249 etc")
+if '22-CCB-0107' not in allclosedcases:
+    allclosedcases.append('22-CCB-0107')
+    allclosedcases.sort()
 
 # compare with active cases
 res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16')
