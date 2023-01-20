@@ -1,4 +1,4 @@
-If you download all of this locally and run all the scripts (using runemall.py), it will generate the 3 HTML reports I post to 
+If you download all of this locally and run all the scripts (using runemall.py), it will generate the 4 HTML reports I post to 
 https://bibliobaloney.github.io/, plus supporting files. 
 If you don't already have them, you'll also need the following libraries installed: bs4, csv, datetime, math, PyPDF2, re, requests, statistics.
 I'm a dabbler hobbyist, so I've done all this using Mu (https://codewith.mu/en/). Mu tells me I'm using Python 3.8.11.
