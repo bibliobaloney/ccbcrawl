@@ -386,18 +386,17 @@ avgotatime = int(mean(timestoota))
 avgocctime = int(mean(timestoocc))
 timestoall = timestoota + timestoocc
 avgtimesall = int(mean(timestoall))
-htmlreport.write('<p>Average number of days from claim to first OTA or OCC: ' + str(avgtimesall) + '<br/>' +
-    'Just orders to amend: ' + str(avgotatime) + '<br/>' +
-    'Just orders certifying claim: ' + str(avgocctime) + '</p>' +
-    '<p>By order of claim:</p>' + '<ul>' +
-    '<li>Claims 1-50 (based on ' + str(batchsizes[0]) + ' of 50 cases*): ' + str(int(averagesbybatch[0])) + ' days</li>' +
-    '<li>Claims 51-100 (' + str(batchsizes[1]) + ' of 50 cases): ' + str(int(averagesbybatch[1])) + ' days</li>' +
-    '<li>Claims 101-150 (' + str(batchsizes[2]) + ' of 50 cases): ' + str(int(averagesbybatch[2])) + ' days</li>' +
-    '<li>Claims 151-200 (' + str(batchsizes[3]) + ' of 50 cases): ' + str(int(averagesbybatch[3])) + ' days</li>' +
-    '<li>Claims 201-250 (' + str(batchsizes[4]) + ' of 50 cases): ' + str(int(averagesbybatch[4])) + ' days</li>' +
-    "</ul><p>*For cases where a time could be calculated. A time can't be calculated if no OTA or OCC has been filed yet, " +
-    "or if an OTA or OCC was filed but the claim wasn't made public. Some cases are closed before an OTA or OCC is filed, e.g. at the " +
-    "request of the claimant, for failure to provide respondent address, etc.</p>")
+htmlreport.write('<p>Average number of days from claim to first OTA or OCC: ' + str(avgtimesall) + '<br/>' + '</p>')
+
+# htmlreport.write('<p>By order of claim:</p>' + '<ul>' +
+#     '<li>Claims 1-50 (based on ' + str(batchsizes[0]) + ' of 50 cases*): ' + str(int(averagesbybatch[0])) + ' days</li>' +
+#     '<li>Claims 51-100 (' + str(batchsizes[1]) + ' of 50 cases): ' + str(int(averagesbybatch[1])) + ' days</li>' +
+#     '<li>Claims 101-150 (' + str(batchsizes[2]) + ' of 50 cases): ' + str(int(averagesbybatch[2])) + ' days</li>' +
+#     '<li>Claims 151-200 (' + str(batchsizes[3]) + ' of 50 cases): ' + str(int(averagesbybatch[3])) + ' days</li>' +
+#     '<li>Claims 201-250 (' + str(batchsizes[4]) + ' of 50 cases): ' + str(int(averagesbybatch[4])) + ' days</li>' +
+#     "</ul><p>*For cases where a time could be calculated. A time can't be calculated if no OTA or OCC has been filed yet, " +
+#     "or if an OTA or OCC was filed but the claim wasn't made public. Some cases are closed before an OTA or OCC is filed, e.g. at the " +
+#     "request of the claimant, for failure to provide respondent address, etc.</p>")
 
 # Closed cases
 htmlreport.write('<p>Number of <a href="/closedcases.html">closed cases</a> ' +

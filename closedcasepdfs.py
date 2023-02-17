@@ -180,18 +180,23 @@ print("Saving PDFs locally")
 for case in newclosedcases:
     print(case)
     dismissalpdfurl = closedcasesdict[case]["Dismissal PDF URL"]
-    res = requests.get(dismissalpdfurl)
-    res.raise_for_status()
-    pdffile = open('pdfs/' + case + 'dismissalorder.pdf', 'wb')
-    for chunk in res.iter_content(100000):
-        pdffile.write(chunk)
-    pdffile.close()
+    if dismissalpdfurl != "No dismissal order found":
+        res = requests.get(dismissalpdfurl)
+        res.raise_for_status()
+        pdffile = open('pdfs/' + case + 'dismissalorder.pdf', 'wb')
+        for chunk in res.iter_content(100000):
+            pdffile.write(chunk)
+        pdffile.close()
+    else:
+        print(dismissalpdfurl + " for case " + case)
 
 # Get text from first page of PDF
 print("Extracting text from dismissal order PDFs")
 for case in newclosedcases:
     filename = closedcasesdict[case]["PDF filename"]
-    pdftext = getpdftext(filename)
+    pdftext = ''
+    if closedcasesdict[case]["Dismissal PDF URL"] != "No dismissal order found":
+        pdftext = getpdftext(filename)
     print(pdftext)
     if 'opt-out' in pdftext:
         pdfreason = "Respondent(s) opted out"
@@ -201,7 +206,7 @@ for case in newclosedcases:
         pdfreason = "Failure to provide respondent address"
     elif 'payment for the claim failed' in pdftext:
         pdfreason = "Payment for the claim failed"
-    elif 'request from the claimant' in pdftext:
+    elif 'request from the claimant' or 'request to dismiss from' in pdftext:
         pdfreason = "Request from claimant"
     elif 'did not file a proof of service or waiver of service' in pdftext:
         pdfreason = "Proof of service not filed"
@@ -251,12 +256,12 @@ if '22-CCB-0107' not in allclosedcases:
     allclosedcases.sort()
 
 # compare with active cases
-res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16')
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16&max=100')
 res.raise_for_status()
 activecasesoup = bs4.BeautifulSoup(res.text, 'lxml')
 activecaserows = activecasesoup.find_all('tr')
 activecases = len(activecaserows) - 1
-htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16"> cases ' +
+htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16&max=100"> cases ' +
     'where a scheduling order has been filed</a>: ' +
     str(activecases) + '</p>')
 

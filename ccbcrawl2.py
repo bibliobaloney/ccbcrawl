@@ -47,6 +47,8 @@ while currentcheck <= lastdocketnum:
     if docketnum not in docketswehave:
         docketsweneed.append(docketnum)
     currentcheck += 1
+#Late 2022 case with no public claim. Remove this line when 22-CCB-0280 is closed
+docketsweneed.append('22-CCB-0280')
 
 # for weird edge cases where there are documents, but the claim isn't first, like 22-CCB-0015
 def digforclaimurl(docketurl):

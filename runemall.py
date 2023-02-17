@@ -23,7 +23,7 @@ exec(code)
 f = open('closedcasepdfs.py', 'r')
 temp = f.read()
 f.close()
-code = compile(temp, 'closedcases.py', 'exec')
+code = compile(temp, 'closedcasepdfs.py', 'exec')
 exec(code)
 
 # Run active cases report
