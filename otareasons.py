@@ -50,8 +50,13 @@ res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGrou
 res.raise_for_status()
 amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 amendtablerows = amendlistsoup.tbody.find_all('tr')
-# Get the next 100
+# Get the 2nd 100
 res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A52&offset=100&max=100')
+res.raise_for_status()
+amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+amendtablerows.extend(amendlistsoup.tbody.find_all('tr'))
+# Get the 3rd 100
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A52&offset=200&max=100')
 res.raise_for_status()
 amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 amendtablerows.extend(amendlistsoup.tbody.find_all('tr'))

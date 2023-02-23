@@ -25,16 +25,25 @@ for dictionary in reader:
     caseswithstatus.append(casedictname)
 statusdata.close()
 
+# Get list of closed cases from closedcases.csv (created by closedcasepdf.py)
+closedcasedata = open('closedcases.csv', 'r')
+reader = csv.reader(closedcasedata)
+closedcases = []
+for record in reader:
+    closedcases.append(record[0])
+closedcasedata.close()
+closedcases.pop(0)
+
 # Get the case numbers for the (first 100) cases from the closed case list
-print("Getting closed cases")
-allclosedcases = []
-res = requests.get('https://dockets.ccb.gov/search/closed?max=100')
-res.raise_for_status()
-closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
-closedtablerows = closedlistsoup.tbody.find_all('tr')
-for row in closedtablerows:
-    allclosedcases.append(getdocketnumclosedlist(row))
-allclosedcases.sort()
+# print("Getting closed cases")
+# allclosedcases = []
+# res = requests.get('https://dockets.ccb.gov/search/closed?max=100')
+# res.raise_for_status()
+# closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+# closedtablerows = closedlistsoup.tbody.find_all('tr')
+# for row in closedtablerows:
+#     allclosedcases.append(getdocketnumclosedlist(row))
+# allclosedcases.sort()
 
 tabledoc = open("infringementtable.html", 'w')
 tabledoc.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
@@ -56,17 +65,26 @@ for case in casedatalist:
     status =  "No claim certified, no orders to amend"
     docketnum = case["Docket No."]
     color = "#ffffff"
-    if docketnum in allclosedcases:
-        status = '<a href="/closedcases.html">Closed</a>'
-        color = "#ffdfba"
-    elif docketnum in caseswithstatus:
+    if docketnum == "22-CCB-0045":
+        status = '<a href="/orderstoamendorcertify.html">Active; transferred to CCB</a>'
+        color = "#baffc9"
+    if docketnum in caseswithstatus:
         grabbedstatus = casestatusdict[docketnum]["Current status"]
         if grabbedstatus == "Certified":
             status = '<a href="/orderstoamendorcertify.html">Certified</a>'
             color = "#baffc9"
+        elif grabbedstatus == "Closed":
+            status = '<a href="/closedcases.html">Closed</a>'
+            color = "#ffdfba"
+        elif grabbedstatus == "Final Determination filed":
+            status = 'Final Determination filed'
+            color = "#bae1ff"
         elif grabbedstatus == "Awaiting amendment/certification":
             status = '<a href="/orderstoamendorcertify.html">Awaiting amendment/certification</a>'
             color = "#ffffba"
+    elif docketnum in closedcases:
+        status = '<a href="/closedcases.html">Closed</a>'
+        color = "#ffdfba"
     tabledoc.write('<tr>' +
         '<td>' + '<a href="' + case["Docket URL"] + '">' + case["Docket No."] + '</a>' '</td>' +
         '<td>' + case["Claim types"] + '</td>' +

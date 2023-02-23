@@ -48,6 +48,23 @@ def getamendedclaimdate(docketurl):
     fileddate = fileddatetd.get_text(strip=True)
     return fileddate[:10]
 
+# Get the case numbers for the (first 100) cases with final determinations
+print ("Getting final determinations")
+finalcases = []
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A19&max=100')
+res.raise_for_status()
+finallistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+finaltablerows = finallistsoup.tbody.find_all('tr')
+for row in finaltablerows:
+    finalcases.append(getdocketnum(row))
+print(finalcases)
+
+# output list of cases w/ final determinations to a text file for activecases.py
+finalfile = open('finalfile.txt', 'w')
+for item in finalcases:
+    finalfile.writelines(item + '\n')
+finalfile.close()
+
 # Get the case numbers for the (first 100) cases with orders to amend
 print("Getting orders to amend")
 amendedcasesall = []
@@ -59,11 +76,21 @@ amendtablerows = amendlistsoup.tbody.find_all('tr')
 for row in amendtablerows:
     amendedcasesall.append(getdocketnum(row))
     amendordersall.append([getdocketnum(row), getdatefiled(row)])
-# Get the next hundred
+# Get the 2nd hundred
 res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A52&offset=100&max=100')
 res.raise_for_status()
 amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 amendtablerows = amendlistsoup.tbody.find_all('tr')
+for row in amendtablerows:
+    amendedcasesall.append(getdocketnum(row))
+    amendordersall.append([getdocketnum(row), getdatefiled(row)])
+# Get the 3rd hundred
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A52&offset=200&max=100')
+res.raise_for_status()
+amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+amendtablerows = amendlistsoup.tbody.find_all('tr')
+print("When this gets to 100, add another URL to fetch more OTAs")
+print(str(len(amendtablerows)))
 for row in amendtablerows:
     amendedcasesall.append(getdocketnum(row))
     amendordersall.append([getdocketnum(row), getdatefiled(row)])
@@ -164,18 +191,21 @@ closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
 for row in closedtablerows:
     allclosedcases.append(getdocketnumclosedlist(row))
-# Get the next 100
+# Get the 2nd 100
 res = requests.get('https://dockets.ccb.gov/search/closed?&offset=100&max=100')
 res.raise_for_status()
 closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
+print("When this gets to 100, add another URL to fetch more closed cases")
+print(str(len(closedtablerows)))
 for row in closedtablerows:
     allclosedcases.append(getdocketnumclosedlist(row))
-allclosedcases.sort()
 # Temporary fix for 141 not being in the closed case list on the CCB site. Can delete when this number matches html
-# print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
-# if '22-CCB-0141' not in allclosedcases:
-#     allclosedcases.append('22-CCB-0141')
+print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
+closedlistproblems = ['22-CCB-0141', '22-CCB-0107', '22-CCB-0209']
+for case in closedlistproblems:
+    if case not in allclosedcases:
+        allclosedcases.append(case)
 allclosedcases.sort()
 
 # Get a list of cases that have OTAs or OCCs that are now closed
@@ -191,16 +221,28 @@ represented = []
 unrepresented = []
 timestoota = []
 timestoocc = []
-julota = 0
-julocc = 0
-augota = 0
-augocc = 0
-sepota = 0
-sepocc = 0
-octota = 0
-octocc = 0
-novota = 0
-novocc = 0
+# julota = 0
+# julocc = 0
+# augota = 0
+# augocc = 0
+# sepota = 0
+# sepocc = 0
+# octota = 0
+# octocc = 0
+# novota = 0
+# novocc = 0
+
+allunrepresented = 0
+allrepresented = 0
+allrepunknown = 0
+for case in casedatadict:
+    lawfirm = casedatadict[case]["Claimant law firm"]
+    if lawfirm == "none":
+        allunrepresented += 1
+    elif lawfirm == "Not available":
+        allrepunknown += 1
+    else:
+        allrepresented += 1
 
 # Build the list of dictionaries, and populate the lists
 otasandoccsdicts = []
@@ -242,33 +284,35 @@ for case in allcases:
             timestoocc.append(delta.days)
         newcase["Time to 1st action"] = delta.days
         timestoaction[case] = delta.days
-    if firstorderdate[:2] == "07":
-        if firstordertype == "Amend":
-            julota += 1
-        else:
-            julocc += 1
-    elif firstorderdate[:2] == "08":
-        if firstordertype == "Amend":
-            augota += 1
-        else:
-            augocc += 1
-    elif firstorderdate[:2] == "09":
-        if firstordertype == "Amend":
-            sepota += 1
-        else:
-            sepocc += 1
-    elif firstorderdate[:2] == "10":
-        if firstordertype == "Amend":
-            octota += 1
-        else:
-            octocc += 1
-    elif firstorderdate[:2] == "11":
-        if firstordertype == "Amend":
-            novota += 1
-        else:
-            novocc += 1
+#     if firstorderdate[:2] == "07":
+#         if firstordertype == "Amend":
+#             julota += 1
+#         else:
+#             julocc += 1
+#     elif firstorderdate[:2] == "08":
+#         if firstordertype == "Amend":
+#             augota += 1
+#         else:
+#             augocc += 1
+#     elif firstorderdate[:2] == "09":
+#         if firstordertype == "Amend":
+#             sepota += 1
+#         else:
+#             sepocc += 1
+#     elif firstorderdate[:2] == "10":
+#         if firstordertype == "Amend":
+#             octota += 1
+#         else:
+#             octocc += 1
+#     elif firstorderdate[:2] == "11":
+#         if firstordertype == "Amend":
+#             novota += 1
+#         else:
+#             novocc += 1
     if case in statusclosed:
         newcase["Current status"] = "Closed"
+    elif case in finalcases:
+        newcase["Current status"] = "Final Determination filed"
     elif case in certifiedcases:
         newcase["Current status"] = "Certified"
         statuscert.append(case)
@@ -340,7 +384,14 @@ htmlreport.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
     '</style>' + '\n' + '</head>' + '\n' + '<body>' + '\n')
 
 htmlreport.write('<p>Run date: ' + str(date.today()) + '</p>')
-htmlreport.write('<p>Number of claims filed: ' + str(len(casedatadict)) + '</p>')
+totalcases = len(casedatadict)
+pctallrepresented = round(allrepresented/totalcases * 100)
+pctallunrepresented = round(allunrepresented/totalcases * 100)
+pctallrepunknown = round(allrepunknown/totalcases * 100)
+htmlreport.write('<p>Number of claims filed: ' + str(totalcases) + '</p>')
+htmlreport.write('<p>Claimant represented: ' + str(allrepresented) + ' (' + str(pctallrepresented) + '%)' +
+    ' Claimant unrepresented:  ' + str(allunrepresented) + ' (' + str(pctallunrepresented) + '%)' +
+    ' Representation status unknown: ' + str(allrepunknown) + ' (' + str(pctallrepunknown) + '%)' + '</p>')
 
 # summary totals
 htmlreport.write('<table>' +
@@ -355,13 +406,13 @@ numstatuscert = len(statuscert)
 numstatuswaiting = len(statuswaiting)
 numstatusclosed = len(statusclosed)
 numall = len(allcases)
-pctcert = (numstatuscert/numall) * 100
-pctwaiting = (numstatuswaiting/numall) * 100
-pctclosed = (numstatusclosed/numall) * 100
+pctcert = round((numstatuscert/numall) * 100)
+pctwaiting = round((numstatuswaiting/numall) * 100)
+pctclosed = round((numstatusclosed/numall) * 100)
 htmlreport.write('<p>Current status of the subset of cases with an OTA or OCC (' + str(numall) + ') :</p>' +
-    '<table><td>Certified, still open</td><td>' + str(numstatuscert) + '</td><td>' + str(pctcert)[:2] + '%</td></tr>' +
-    '<td>Awaiting claimant amendment or CCB certification</td><td>' + str(numstatuswaiting) + '</td><td>' + str(pctwaiting)[:2] + '%</td></tr>' +
-    '<td>Closed</td><td>' + str(numstatusclosed) + '</td><td>' + str(pctclosed)[:2] + '%</td></tr>' +
+    '<table><td>Certified, still open</td><td>' + str(numstatuscert) + '</td><td>' + str(pctcert) + '%</td></tr>' +
+    '<td>Awaiting claimant amendment or CCB certification</td><td>' + str(numstatuswaiting) + '</td><td>' + str(pctwaiting) + '%</td></tr>' +
+    '<td>Closed</td><td>' + str(numstatusclosed) + '</td><td>' + str(pctclosed) + '%</td></tr>' +
     '</table>')
 
 # How many unrepresented folks are getting claims certified? Represented folks?
@@ -374,12 +425,12 @@ for case in certifiedcases:
         repandcert += 1
     else:
         unrepandcert += 1
-pctofrepcertified = (repandcert/numrepresented) * 100
-pctofunrepcertified = (unrepandcert/numunrepresented) * 100
-htmlreport.write('<p>Cases with represented claimants: ' + str(numrepresented) +
-    '&emsp; | &emsp; with certified claims: ' + str(repandcert) + ' (' + str(pctofrepcertified)[:2] + '%)<br/>' +
-    'Cases with unrepresented claimants: ' + str(numunrepresented) +
-    '&emsp; | &emsp; with certified claims: ' + str(unrepandcert) + ' (' + str(pctofunrepcertified)[:2] + '%)' +
+pctofrepcertified = round((repandcert/numrepresented) * 100)
+pctofunrepcertified = round((unrepandcert/numunrepresented) * 100)
+htmlreport.write('<p>Cases with an OTA or OCC with represented claimants: ' + str(numrepresented) +
+    '&emsp; | &emsp; with certified claims: ' + str(repandcert) + ' (' + str(pctofrepcertified) + '%)<br/>' +
+    'Cases with an OTA or OCC with unrepresented claimants: ' + str(numunrepresented) +
+    '&emsp; | &emsp; with certified claims: ' + str(unrepandcert) + ' (' + str(pctofunrepcertified) + '%)' +
     '</p>')
 
 avgotatime = int(mean(timestoota))
@@ -415,13 +466,14 @@ htmlreport.write('<table><tr><th>Docket No.</th><th>Caption</th><th>Claim date</
     '</tr>')
 for case in otasandoccsdicts:
     color = "#ffffba"
-    status = "Awaiting amendment/certification"
-    if case["Current status"] == "Closed":
+    status = case["Current status"]
+    if status == "Closed":
         status = '<a href="/closedcases.html">Closed</a>'
         color = "#ffdfba"
-    elif case["Current status"] == "Certified":
+    elif status == "Certified":
         color = "#baffc9"
-        status = "Certified"
+    elif status == "Final Determination filed":
+        color = "#bae1ff"
     docketnum = case["Docket No."]
     htmlreport.write('<tr>' +
     '<td>' + '<a href="' + casedatadict[docketnum]["Docket URL"] + '">' + docketnum + '</a></td>' +
@@ -436,24 +488,24 @@ for case in otasandoccsdicts:
     '</tr>')
 htmlreport.write('</table>')
 
-alljulorders = julota + julocc
-allaugorders = augota + augocc
-allseporders = sepota + sepocc
-alloctorders = octota + octocc
-allnovorders = novota + novocc
-htmlreport.write('<p>Types of first action by month</p>')
-htmlreport.write('<table><tr><th>Month</th><th>OTAs</th><th>OCCs</th></tr>' +
-    '<tr><td>July</td><td>' + str(julota) + ' (' + str((julota/alljulorders) * 100)[:2] + '%)</td><td>' +
-    str(julocc) + ' (' + str((julocc/alljulorders) * 100)[:2] + '%)</td></tr>' +
-    '<tr><td>August</td><td>' + str(augota) + ' (' + str((augota/allaugorders) * 100)[:2] + '%)</td><td>' +
-    str(augocc) + ' (' + str((augocc/allaugorders) * 100)[:2] + '%)</td></tr>' +
-    '<tr><td>September</td><td>' + str(sepota) + ' (' + str((sepota/allseporders) * 100)[:2] + '%)</td><td>' +
-    str(sepocc) + ' (' + str((sepocc/allseporders) * 100)[:2] + '%)</td></tr>' +
-    '<tr><td>October</td><td>' + str(octota) + ' (' + str((octota/alloctorders) * 100)[:2] + '%)</td><td>' +
-    str(octocc) + ' (' + str((octocc/alloctorders) * 100)[:2] + '%)</td></tr>' +
-    '<tr><td>November</td><td>' + str(novota) + ' (' + str((novota/allnovorders) * 100)[:2] + '%)</td><td>' +
-    str(novocc) + ' (' + str((novocc/allnovorders) * 100)[:2] + '%)</td></tr>' +
-    '</table>')
+# alljulorders = julota + julocc
+# allaugorders = augota + augocc
+# allseporders = sepota + sepocc
+# alloctorders = octota + octocc
+# allnovorders = novota + novocc
+# htmlreport.write('<p>Types of first action by month</p>')
+# htmlreport.write('<table><tr><th>Month</th><th>OTAs</th><th>OCCs</th></tr>' +
+#     '<tr><td>July</td><td>' + str(julota) + ' (' + str((julota/alljulorders) * 100)[:2] + '%)</td><td>' +
+#     str(julocc) + ' (' + str((julocc/alljulorders) * 100)[:2] + '%)</td></tr>' +
+#     '<tr><td>August</td><td>' + str(augota) + ' (' + str((augota/allaugorders) * 100)[:2] + '%)</td><td>' +
+#     str(augocc) + ' (' + str((augocc/allaugorders) * 100)[:2] + '%)</td></tr>' +
+#     '<tr><td>September</td><td>' + str(sepota) + ' (' + str((sepota/allseporders) * 100)[:2] + '%)</td><td>' +
+#     str(sepocc) + ' (' + str((sepocc/allseporders) * 100)[:2] + '%)</td></tr>' +
+#     '<tr><td>October</td><td>' + str(octota) + ' (' + str((octota/alloctorders) * 100)[:2] + '%)</td><td>' +
+#     str(octocc) + ' (' + str((octocc/alloctorders) * 100)[:2] + '%)</td></tr>' +
+#     '<tr><td>November</td><td>' + str(novota) + ' (' + str((novota/allnovorders) * 100)[:2] + '%)</td><td>' +
+#     str(novocc) + ' (' + str((novocc/allnovorders) * 100)[:2] + '%)</td></tr>' +
+#     '</table>')
 
 htmlreport.write('\n' + '</body>' + '\n' + '</html>')
 htmlreport.close()

@@ -18,6 +18,13 @@ for record in reader:
     closedcases.append(record[0])
 closedcasedata.close()
 
+# import cases with final determinations, as created by amendorcertify.py
+finals = []
+finalfile = open('finalfile.txt', 'r')
+for line in finalfile.readlines():
+    finals.append(line[:11])
+finalfile.close()
+
 def getdocketnum(row):
     cells = []
     cells += row.find_all('td')
@@ -137,7 +144,8 @@ for case in caseswithschedulingorders:
     if case in closedcases:
         subseqclosed.append(case)
     else:
-        activecases.append(case)
+        if case not in finals:
+            activecases.append(case)
 
 print(str(len(activecases)) + " active cases")
 print(activecases)
@@ -187,14 +195,21 @@ activecasesreport.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
     '\n')
 
 activecasesreport.write('<p>Run date: ' + str(date.today()) + '</p>')
-activecasesreport.write('<p>Number of scheduling orders filed: ' + str(len(schedulingordercaserows)) + '</p>')
-activecasesreport.write('<p>Number of active cases*, listed below with oldest scheduling order first: ' + str(len(activecases)) + '</p>')
-activecasesreport.write('<p>Number of active cases where at least one respondent has registered for eCCB: ' + str(anyonehome) + '</p>')
+activecasesreport.write('<p>Number of cases with scheduling orders filed: ' + str(len(schedulingordercaserows)) + '</p>')
+activecasesreport.write('<p>Number of those cases showing up in the <a href="https://dockets.ccb.gov/search/closed">' +
+    'closed cases list</a>: ' + str(len(subseqclosed)) + '</p>')
+activecasesreport.write('<p>Number of those cases with <a href="https://dockets.ccb.gov/search/closed">' +
+    'Final Determinations filed</a>: ' + str(len(finals)) + '</p><ul>')
+for case in finals:
+    activecasesreport.write('<li><a href="https://dockets.ccb.gov/case/detail/' + case + '">' + case + '</a></li>')
+activecasesreport.write('</ul>')
+activecasesreport.write('<p>Number of active cases,* listed below with oldest scheduling order first: ' + str(len(activecases)) + '</p>')
+activecasesreport.write('<p>Number of active cases where it looks like at least one respondent has registered for eCCB: ' + str(anyonehome) + '</p>')
 activecasesreport.write('<p>Cases where a recent filing mentions "Default": ' + str(defaultmentioned) + '&emsp;' + str(defaultmentionlist) + '</p>')
 intropara = "*"
 intropara += str(len(casedatadict))
 intropara += " claims have been filed, and only "
-intropara += str(len(closedcases))
+intropara += str(len(closedcases) + len(finals))
 intropara += ' cases have been closed. Technically, the rest are open. The cases listed here as "active" are those that '
 intropara += "have had a scheduling order issued and have not subsequently settled or otherwise been closed. To reach this point, 1) the claim must "
 intropara += "be certified by the CCB, 2) the claimant must serve the respondent and file the proof of service, 3) the opt out "
@@ -216,7 +231,7 @@ for case in activecases:
     activecasesdict[case]["Scheduling order date"] + '<br /></p>' +
     '<table>' + '\n' + '<thead><tr><th>Party</th><th>Representative</th><th>Firm</th></tr>' +
     activecasesdict[case]["Parties HTML"] + '</table>' +
-    '<p>Has at least one respondent registered for eCCB (i.e. have they engaged with the process)?  ' + registered + '</p>')
+    '<p>Does it appear that at least one respondent has registered for eCCB?  ' + registered + '</p>')
     docketurl = casedatadict[case]["Docket URL"]
     activecasesreport.write('<p><a href="' + docketurl + '">Recent filings</a></p>')
     activecasesreport.write('<table><tr><th>Case doc. #</th><th>Title</th><th>Document type</th><th>Party</th><th>Filed date</th></tr>')

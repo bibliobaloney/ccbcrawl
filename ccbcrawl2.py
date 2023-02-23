@@ -9,13 +9,25 @@ listofstates = (["AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DE", "FL", "GA", "HI
 # Save list of cases to stop looking at, even though no claim available
 donotcheck = ['22-CCB-0016', '22-CCB-0092', '22-CCB-0096', '22-CCB-0105', '22-CCB-0175', '22-CCB-0211']
 
+# Get a list of closed cases from last week
+closedcasescsv = open('closedcases.csv', 'r')
+reader = csv.DictReader(closedcasescsv)
+closedcaseslist = []
+for dictionary in reader:
+    closedcaseslist.append(dictionary["Docket No."])
+
 lastweek = open('casedata.csv', 'r')
 # Grab cases where claim details have already been collected in local file
+# also check to see if we ran things out of order and still need to grab dismissal order
 reader = csv.DictReader(lastweek)
 casedatalist = list()
 for case in reader:
-    if case["Claim URL"][:4] == "http" or case["Docket No."] in donotcheck:
+    docketnum = case["Docket No."]
+    if case["Claim URL"][:4] == "http" or docketnum in donotcheck:
         casedatalist.append(case)
+    if docketnum in closedcaseslist and "Dismiss" not in case["Latest doc"]:
+        closedcaseslist.remove(docketnum)
+        print("Closed but last doc grabbed wasn't dismissal: " + docketnum)
 lastweek.close()
 
 # Get latest docket number
@@ -26,17 +38,10 @@ toprow = caselistsoup.tbody.find('tr')
 lastdocket = toprow.find_all('td')[1].get_text(strip=True)
 lastdocketnum = int(lastdocket[7:])
 
-# Get a list of the dockets we already have, or that are closed
+# Get a list of the dockets we already have
 docketswehave = []
 for case in casedatalist:
         docketswehave.append(case.get("Docket No."))
-
-# Get a list of closed cases from last week
-closedcasescsv = open('closedcases.csv', 'r')
-reader = csv.DictReader(closedcasescsv)
-closedcaseslist = []
-for dictionary in reader:
-    closedcaseslist.append(dictionary["Docket No."])
 
 #Get a list of dockets we need
 docketsweneed = []
@@ -272,7 +277,7 @@ for docket in docketsweneed:
     if capandclaiminfo[3][0:4] == 'http':
         casedetails = getcasedetails(capandclaiminfo[3], capandclaiminfo[0])
     else:
-        casedetails = ["Not available", "Not available", "See caption", "Not available", "See caption", "Not available", "Not available", "Not available"]
+        casedetails = ["Not available", "Not available", "See caption/docket", "Not available", "See caption/docket", "Not available", "Not available", "Not available"]
     newcase["Claim types"] = casedetails[0]
     newcase["Smaller?"] = casedetails[1]
     newcase["Claimant"] = casedetails[2]

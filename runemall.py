@@ -5,7 +5,7 @@ f.close()
 code = compile(temp, 'ccbcrawl2.py', 'exec')
 exec(code)
 
-# Run report on reasons cited in orders to amend
+# output CSV of reasons cited in orders to amend
 f = open('otareasons.py', 'r')
 temp = f.read()
 f.close()
