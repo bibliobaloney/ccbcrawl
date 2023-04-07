@@ -98,11 +98,15 @@ def textshave(celltext):
     return celltext
 
 def stripdockettable(docketurl):
-    res = requests.get(docketurl)
+    defaultcheck = False
+    longurl = docketurl + '?max=100'
+    res = requests.get(longurl)
     res.raise_for_status()
     docketsoup = bs4.BeautifulSoup(res.text, 'lxml')
     docketrows = docketsoup.find_all('tr')
     docketrows.pop(0)
+    if len(docketsoup.find_all(text=re.compile('Default'))) != 0:
+        defaultcheck = True
     recentrows = docketrows[:5]
     strippedrows = ''
     for row in recentrows:
@@ -123,7 +127,7 @@ def stripdockettable(docketurl):
                 newcell = '<td>' + newcelltext + '</td>'
             strippedrows += newcell
         strippedrows += '</tr>'
-    return strippedrows
+    return strippedrows, defaultcheck
 
 # Get cases with scheduling orders, oldest to newest
 print("Getting list of cases with scheduling orders")
@@ -175,9 +179,11 @@ for case in activecases:
     if respondentregistered:
         anyonehome += 1
     docketurl = casedatadict[case]["Docket URL"]
-    filingshtml = stripdockettable(docketurl)
+    checkfilings = stripdockettable(docketurl)
+    filingshtml = checkfilings[0]
     newcase["Filings HTML"] = filingshtml
-    if "Default" in filingshtml:
+    defaultcheck = checkfilings[1]
+    if defaultcheck:
         defaultmentioned += 1
         defaultmentionlist.append(case)
     activecasesdict[case] = newcase
@@ -204,7 +210,9 @@ for case in finals:
     activecasesreport.write('<li><a href="https://dockets.ccb.gov/case/detail/' + case + '">' + case + '</a></li>')
 activecasesreport.write('</ul>')
 activecasesreport.write('<p>Number of active cases,* listed below with oldest scheduling order first: ' + str(len(activecases)) + '</p>')
-activecasesreport.write('<p>Number of active cases where it looks like at least one respondent has registered for eCCB: ' + str(anyonehome) + '</p>')
+# For some reason people are showing up as self-represented even when the CCB is issuing default notices saying they haven't
+# registered with the CCB. So skip this line for now.
+# activecasesreport.write('<p>Number of active cases where it looks like at least one respondent has registered for eCCB: ' + str(anyonehome) + '</p>')
 activecasesreport.write('<p>Cases where a recent filing mentions "Default": ' + str(defaultmentioned) + '&emsp;' + str(defaultmentionlist) + '</p>')
 intropara = "*"
 intropara += str(len(casedatadict))
@@ -230,8 +238,9 @@ for case in activecases:
     'Date of <a href="' + activecasesdict[case]["Scheduling order URL"] + '">(initial) scheduling order</a>: ' +
     activecasesdict[case]["Scheduling order date"] + '<br /></p>' +
     '<table>' + '\n' + '<thead><tr><th>Party</th><th>Representative</th><th>Firm</th></tr>' +
-    activecasesdict[case]["Parties HTML"] + '</table>' +
-    '<p>Does it appear that at least one respondent has registered for eCCB?  ' + registered + '</p>')
+    activecasesdict[case]["Parties HTML"] + '</table>')
+# Remove when you figure out how the "self-represented" note is popping up for folks on the default track
+#    '<p>Does it appear that at least one respondent has registered for eCCB?  ' + registered + '</p>')
     docketurl = casedatadict[case]["Docket URL"]
     activecasesreport.write('<p><a href="' + docketurl + '">Recent filings</a></p>')
     activecasesreport.write('<table><tr><th>Case doc. #</th><th>Title</th><th>Document type</th><th>Party</th><th>Filed date</th></tr>')

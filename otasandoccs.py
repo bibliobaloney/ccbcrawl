@@ -196,10 +196,17 @@ res = requests.get('https://dockets.ccb.gov/search/closed?&offset=100&max=100')
 res.raise_for_status()
 closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
-print("When this gets to 100, add another URL to fetch more closed cases")
-print(str(len(closedtablerows)))
 for row in closedtablerows:
     allclosedcases.append(getdocketnumclosedlist(row))
+# Get the 3rd 100
+res = requests.get('https://dockets.ccb.gov/search/closed?&offset=200&max=100')
+res.raise_for_status()
+closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+closedtablerows = closedlistsoup.tbody.find_all('tr')
+for row in closedtablerows:
+    allclosedcases.append(getdocketnumclosedlist(row))
+print("When this gets to 100, add another URL to fetch more closed cases")
+print(str(len(closedtablerows)))
 # Temporary fix for 141 not being in the closed case list on the CCB site. Can delete when this number matches html
 print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))
 closedlistproblems = ['22-CCB-0141', '22-CCB-0107', '22-CCB-0209']
@@ -450,8 +457,7 @@ htmlreport.write('<p>Average number of days from claim to first OTA or OCC: ' + 
 #     "request of the claimant, for failure to provide respondent address, etc.</p>")
 
 # Closed cases
-htmlreport.write('<p>Number of <a href="/closedcases.html">closed cases</a> ' +
-    '(so far, all have been dismissed without prejudice): ' +
+htmlreport.write('<p>Number of <a href="/closedcases.html">closed cases</a>: ' +
     str(len(allclosedcases)) + '</p>')
 
 htmlreport.write('<p>Number of cases with a foreign claimant: ' + str(len(foreignclaimants)) +

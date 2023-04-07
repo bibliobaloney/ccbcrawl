@@ -53,7 +53,7 @@ while currentcheck <= lastdocketnum:
         docketsweneed.append(docketnum)
     currentcheck += 1
 #Late 2022 case with no public claim. Remove this line when 22-CCB-0280 is closed
-docketsweneed.append('22-CCB-0280')
+#docketsweneed.append('22-CCB-0280')
 
 # for weird edge cases where there are documents, but the claim isn't first, like 22-CCB-0015
 def digforclaimurl(docketurl):
@@ -161,7 +161,7 @@ def getcasedetails(claimurl, fullcaption):
         claimant = claimsoup.find(text=re.compile(capclaimant)).parent.get_text(strip=True)
     details.append(claimant)
     claimantlawfirm = 'none'
-    if claimsoup.find_all(text=re.compile('Law firm')):
+    if claimsoup.find_all(text=re.compile('Law firm, clinic, or pro bono')):
         lawfirmhook = claimsoup.find(text=re.compile('Law firm'))
         lawfirmdiv = lawfirmhook.parent.parent.find(attrs={'data-field' : 'organization'})
         claimantlawfirm = lawfirmdiv.get_text(strip=True)
