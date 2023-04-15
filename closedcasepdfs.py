@@ -44,9 +44,9 @@ def getdismissalpdfurl(docketurl):
         cells = docketrows[currentrow].find_all('td')
         for cell in cells:
             tds.append(cell.get_text(strip=True))
-        if len(tds) > 2 and (tds[2] == "Order Dismissing Claim"):
+        if len(tds) > 2 and ("Dismissing Claim" in tds[1]):
             dismissalrow = docketrows[currentrow]
-        elif len(tds) > 2 and (tds[1] == "DownloadOrder Closing Case"):
+        elif len(tds) > 2 and ("Closing Case" in tds[1]):
             dismissalrow = docketrows[currentrow]
         else:
             currentrow += 1
@@ -128,6 +128,13 @@ closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
 for row in closedtablerows:
     allclosedcases.append(getdocketnum(row))
+# Get the next 100
+res = requests.get('https://dockets.ccb.gov/search/closed?&offset=200&max=100')
+res.raise_for_status()
+closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+closedtablerows = closedlistsoup.tbody.find_all('tr')
+for row in closedtablerows:
+    allclosedcases.append(getdocketnum(row))
 allclosedcases.sort()
 
 newclosedcases = []
@@ -173,7 +180,10 @@ for case in newclosedcases:
     print(case)
     dismissalpdfurl = getdismissalpdfurl('https://dockets.ccb.gov/case/detail/' + case)
     closedcasesdict[case]["Dismissal PDF URL"] = dismissalpdfurl
-    closedcasesdict[case]["PDF filename"] = 'pdfs/' + case + 'dismissalorder.pdf'
+    if dismissalpdfurl == "No dismissal order found":
+        closedcasesdict[case]["PDF filename"] = 'None'
+    else:
+        closedcasesdict[case]["PDF filename"] = 'pdfs/' + case + 'dismissalorder.pdf'
 
 # Save PDFs locally
 print("Saving PDFs locally")
@@ -194,28 +204,31 @@ for case in newclosedcases:
 print("Extracting text from dismissal order PDFs")
 for case in newclosedcases:
     filename = closedcasesdict[case]["PDF filename"]
-    pdftext = ''
-    if closedcasesdict[case]["Dismissal PDF URL"] != "No dismissal order found":
-        pdftext = getpdftext(filename)
-    print(pdftext)
-    if 'opt-out' in pdftext:
-        pdfreason = "Respondent(s) opted out"
-    elif 'second amended claim' in pdftext:
-        pdfreason = "3 tries and still noncompliant"
-    elif "did not receive  the respondent's address" in pdftext or "did not receive the respondent's address" in pdftext:
-        pdfreason = "Failure to provide respondent address"
-    elif 'payment for the claim failed' in pdftext:
-        pdfreason = "Payment for the claim failed"
-    elif 'request from the claimant' or 'request to dismiss from' in pdftext:
-        pdfreason = "Request from claimant"
-    elif 'did not file a proof of service or waiver of service' in pdftext:
-        pdfreason = "Proof of service not filed"
-    elif 'No amended claim was filed in the time allowed' in pdftext:
-        pdfreason = "Failure to amend"
-    elif 'applied to register the copyright in the work and had filed a new' in pdftext:
-        pdfreason = "Work wasn't registered before; claimant has filed new claim"
-    else:
+    if filename == "None":
         pdfreason = "Unknown/cannot extract"
+    else:
+        pdftext = ''
+        pdfreason = "Unknown"
+        pdftext = getpdftext(filename)
+        print(pdftext)
+        if 'opt-out' in pdftext:
+            pdfreason = "Respondent(s) opted out"
+        elif 'second amended claim' in pdftext:
+            pdfreason = "3 tries and still noncompliant"
+        elif "did not receive  the respondent's address" in pdftext or "did not receive the respondent's address" in pdftext:
+            pdfreason = "Failure to provide respondent address"
+        elif 'payment for the claim failed' in pdftext:
+            pdfreason = "Payment for the claim failed"
+        elif 'request from the claimant' in pdftext or 'request to dismiss from' in pdftext:
+            pdfreason = "Request from claimant"
+        elif 'did not file a proof of service or waiver of service' in pdftext:
+            pdfreason = "Proof of service not filed"
+        elif 'No amended claim was filed in the time allowed' in pdftext:
+            pdfreason = "Failure to amend"
+        elif 'applied to register the copyright in the work and had filed a new' in pdftext:
+            pdfreason = "Work wasn't registered before; claimant has filed new claim"
+        else:
+            pdfreason = "Unknown/cannot extract"
     closedcasesdict[case]["PDF reason"] = pdfreason
 
 # Assign a reason for tallying at the end of the report
@@ -270,7 +283,7 @@ allreasons = []
 for case in allclosedcases:
     allreasons.append(closedcasesdict[case]["Tallied reason"])
 
-htmlreport.write('<p>Total number of claims dismissed for each reason</p>')
+htmlreport.write('<p>Total number of claims dismissed/closed for each reason</p>')
 setofreasons = set(allreasons)
 dedupedreasons = list(setofreasons)
 dedupedreasons.sort(reverse = True)
