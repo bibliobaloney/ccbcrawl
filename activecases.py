@@ -141,6 +141,8 @@ schedulingordercaserows.pop(0)
 print("Scheduling orders found: " + str(len(schedulingordercaserows)))
 for row in schedulingordercaserows:
     caseswithschedulingorders.append(getdocketnum(row))
+withordersset = set(caseswithschedulingorders)
+caseswithschedulingorders = list(withordersset)
 
 activecases = []
 subseqclosed = []
@@ -151,6 +153,8 @@ for case in caseswithschedulingorders:
         if case not in finals:
             activecases.append(case)
 
+activecasesset = set(activecases)
+activecases = list(activecasesset)
 print(str(len(activecases)) + " active cases")
 print(activecases)
 
@@ -201,8 +205,8 @@ activecasesreport.write('<!DOCTYPE html>' + '\n' + '<html lang="en">' + '\n' +
     '\n')
 
 activecasesreport.write('<p>Run date: ' + str(date.today()) + '</p>')
-activecasesreport.write('<p>Number of cases with scheduling orders filed: ' + str(len(schedulingordercaserows)) + '</p>')
-activecasesreport.write('<p>Number of those cases showing up in the <a href="https://dockets.ccb.gov/search/closed">' +
+activecasesreport.write('<p>Number of cases with scheduling orders: ' + str(len(caseswithschedulingorders)) + '</p>')
+activecasesreport.write('<p>Number of cases with scheduling orders showing up in the <a href="https://dockets.ccb.gov/search/closed">' +
     'closed cases list</a>: ' + str(len(subseqclosed)) + '</p>')
 activecasesreport.write('<p>Number of those cases with <a href="https://dockets.ccb.gov/search/closed">' +
     'Final Determinations filed</a>: ' + str(len(finals)) + '</p><ul>')
