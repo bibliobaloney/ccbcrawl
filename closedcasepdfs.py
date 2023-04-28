@@ -1,10 +1,18 @@
 import csv, requests, bs4, PyPDF2
 from datetime import date
 
+# in a case list, docket number is in the 2nd column
 def getdocketnum(row):
     cells = []
     cells += row.find_all('td')
     docketnum = str(cells[1].get_text(strip=True))
+    return docketnum
+
+# in a document search, docket number is in the 1st column
+def getdocketnumindoctypesearch(row):
+    cells = []
+    cells += row.find_all('td')
+    docketnum = str(cells[0].get_text(strip=True))
     return docketnum
 
 def getnumamendclaims(docketurl):
@@ -268,12 +276,21 @@ if '22-CCB-0107' not in allclosedcases:
     allclosedcases.append('22-CCB-0107')
     allclosedcases.sort()
 
-# compare with active cases
-res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16&max=100')
+# Get cases with scheduling orders, oldest to newest
+print("Getting list of cases with scheduling orders")
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16&sort=submittedDate&order=asc&max=100')
 res.raise_for_status()
-activecasesoup = bs4.BeautifulSoup(res.text, 'lxml')
-activecaserows = activecasesoup.find_all('tr')
-activecases = len(activecaserows) - 1
+schedulingordercasesoup = bs4.BeautifulSoup(res.text, 'lxml')
+schedulingordercaserows = schedulingordercasesoup.find_all('tr')
+caseswithschedulingorders = []
+# for some reason this one is grabbing the header rows and the others didn't, so pop the header
+schedulingordercaserows.pop(0)
+print("Scheduling orders found: " + str(len(schedulingordercaserows)))
+for row in schedulingordercaserows:
+    caseswithschedulingorders.append(getdocketnumindoctypesearch(row))
+withordersset = set(caseswithschedulingorders)
+caseswithschedulingorders = list(withordersset)
+activecases = len(caseswithschedulingorders)
 htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16&max=100"> cases ' +
     'where a scheduling order has been filed</a>: ' +
     str(activecases) + '</p>')

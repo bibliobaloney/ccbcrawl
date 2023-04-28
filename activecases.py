@@ -143,6 +143,7 @@ for row in schedulingordercaserows:
     caseswithschedulingorders.append(getdocketnum(row))
 withordersset = set(caseswithschedulingorders)
 caseswithschedulingorders = list(withordersset)
+caseswithschedulingorders.sort()
 
 activecases = []
 subseqclosed = []
@@ -155,6 +156,7 @@ for case in caseswithschedulingorders:
 
 activecasesset = set(activecases)
 activecases = list(activecasesset)
+activecases.sort()
 print(str(len(activecases)) + " active cases")
 print(activecases)
 
@@ -213,7 +215,7 @@ activecasesreport.write('<p>Number of those cases with <a href="https://dockets.
 for case in finals:
     activecasesreport.write('<li><a href="https://dockets.ccb.gov/case/detail/' + case + '">' + case + '</a></li>')
 activecasesreport.write('</ul>')
-activecasesreport.write('<p>Number of active cases,* listed below with oldest scheduling order first: ' + str(len(activecases)) + '</p>')
+activecasesreport.write('<p>Number of active cases,* listed below with further details: ' + str(len(activecases)) + '</p>')
 # For some reason people are showing up as self-represented even when the CCB is issuing default notices saying they haven't
 # registered with the CCB. So skip this line for now.
 # activecasesreport.write('<p>Number of active cases where it looks like at least one respondent has registered for eCCB: ' + str(anyonehome) + '</p>')
