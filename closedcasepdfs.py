@@ -235,6 +235,8 @@ for case in newclosedcases:
             pdfreason = "Failure to amend"
         elif 'applied to register the copyright in the work and had filed a new' in pdftext:
             pdfreason = "Work wasn't registered before; claimant has filed new claim"
+        elif 'Copyright Office refused' in pdftext:
+            pdfreason = "Copyright registration refused by Copyright Office"
         else:
             pdfreason = "Unknown/cannot extract"
     closedcasesdict[case]["PDF reason"] = pdfreason
