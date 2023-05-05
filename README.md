@@ -1,7 +1,9 @@
 If you download all of this locally and run all the scripts (using runemall.py), it will generate the 4 HTML reports I post to 
 https://bibliobaloney.github.io/, plus supporting files. 
-If you don't already have them, you'll also need the following libraries installed: bs4, csv, datetime, math, PyPDF2, re, requests, statistics.
+If you don't already have them, you'll also need the following libraries installed: 
+bs4, csv, datetime, math, PyPDF2, re, requests, statistics, lxml, urllib3 (and if Mu tells you you're missing something else you're trying to import, that).
 I'm a dabbler hobbyist, so I've done all this using Mu (https://codewith.mu/en/). Mu tells me I'm using Python 3.8.11.
+If you're on Windows, you probably also need to set the environment variable PYTHONUTF8=1 (paste PYTHONUTF8=1 into the Python3 Environment tab of settings).
 
 Descriptions of individual files, in alphabetical order:
 * activecases.py - script that generates the report on currently active cases with scheduling orders
