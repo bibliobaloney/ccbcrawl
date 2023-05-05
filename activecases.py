@@ -15,7 +15,8 @@ closedcasedata = open('closedcases.csv', 'r')
 reader = csv.reader(closedcasedata)
 closedcases = []
 for record in reader:
-    closedcases.append(record[0])
+    if len(record) != 0:
+        closedcases.append(record[0])
 closedcasedata.close()
 
 # import cases with final determinations, as created by amendorcertify.py
