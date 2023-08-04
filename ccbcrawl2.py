@@ -105,8 +105,6 @@ def getcapandclaim(docketurl):
             firstdoc = ourspan.get_text(strip=True)
         else:
             ourspan = firstdoccell.find("span", class_=re.compile("document-link-title"))
-            srspan = ourspan.find(class_='sr-only')
-            srspan.decompose()
             firstdoc = ourspan.get_text(strip=True)
         if '(Opens new window)' in firstdoc:
             firstdoc = firstdoc.replace('(Opens new window)', '')
@@ -243,8 +241,6 @@ def getlatest(docketurl):
             lastdoc = ourspan.get_text(strip=True)
         elif len(lastdoccell.find_all("span", class_=re.compile("document-link-title"))) !=0:
             ourspan = lastdoccell.find("span", class_=re.compile("document-link-title"))
-            srspan = ourspan.find(class_='sr-only')
-            srspan.decompose()
             lastdoc = ourspan.get_text(strip=True)
         else:
             lastdoc = lastdoccell.get_text(strip=True)

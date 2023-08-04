@@ -57,6 +57,9 @@ finallistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 finaltablerows = finallistsoup.tbody.find_all('tr')
 for row in finaltablerows:
     finalcases.append(getdocketnum(row))
+# 22-CCB-0072 was a request for a dismissal, followed by a dismissal with prejudice
+# if '22-CCB-0072' in finalcases:
+#     finalcases.remove('22-CCB-0072')
 print(finalcases)
 
 # output list of cases w/ final determinations to a text file for activecases.py
@@ -86,6 +89,11 @@ for row in amendtablerows:
     amendordersall.append([getdocketnum(row), getdatefiled(row)])
 # Get the 3rd hundred
 res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A52&offset=200&max=100')
+res.raise_for_status()
+amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+amendtablerows = amendlistsoup.tbody.find_all('tr')
+# Get the 4th hundred
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A52&offset=300&max=100')
 res.raise_for_status()
 amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 amendtablerows = amendlistsoup.tbody.find_all('tr')
@@ -142,6 +150,15 @@ res.raise_for_status()
 certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 certlistrows = certlistsoup.tbody.find_all('tr')
 print("Number of orders at third OCC URL")
+print(str(len(certlistrows)))
+for row in certlistrows:
+    certcasesall.append(getdocketnum(row))
+    certordersall.append([getdocketnum(row), getdatefiled(row)])
+res = requests.get('https://dockets.ccb.gov/search/documents?docTypeGroup=type%3A113&offset=200&max=100')
+res.raise_for_status()
+certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+certlistrows = certlistsoup.tbody.find_all('tr')
+print("Number of orders at fourth OCC URL")
 print(str(len(certlistrows)))
 for row in certlistrows:
     certcasesall.append(getdocketnum(row))
@@ -205,7 +222,14 @@ closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
 for row in closedtablerows:
     allclosedcases.append(getdocketnumclosedlist(row))
-print("When this gets to 100, add another URL to fetch more closed cases")
+# Get the 4th 100
+res = requests.get('https://dockets.ccb.gov/search/closed?&offset=300&max=100')
+res.raise_for_status()
+closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+closedtablerows = closedlistsoup.tbody.find_all('tr')
+for row in closedtablerows:
+    allclosedcases.append(getdocketnumclosedlist(row))
+print("otasandoccs.py: When this gets to 100, add another URL to fetch more closed cases")
 print(str(len(closedtablerows)))
 # Temporary fix for 141 not being in the closed case list on the CCB site. Can delete when this number matches html
 print("number of closed cases from allclosedcases list: " + str(len(allclosedcases)))

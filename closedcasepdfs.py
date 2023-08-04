@@ -38,7 +38,12 @@ def getoptouts(case):
     resparties.raise_for_status()
     partiessoup = bs4.BeautifulSoup(resparties.text, 'lxml')
     partiestd = partiessoup.find_all(attrs={'headers' : 'colHeaderOptOutParty rowHeaderOPT_OUT'})
-    return len(partiestd)
+    numofoptouts = len(partiestd)
+    respondents = []
+    if numofoptouts > 0:
+        for td in partiestd:
+            respondents.append(td.get_text(strip=True))
+    return (numofoptouts, respondents)
 
 def getdismissalpdfurl(docketurl):
     res2 = requests.get(docketurl + '?max=100')
@@ -108,6 +113,15 @@ caseswehave = []
 for case in closedcasesdict:
     caseswehave.append(case)
 
+# get list of respondents who've opted out, updated by this script last time
+optoutrespondents = []
+with open('optoutrespondents.csv', 'r') as f:
+    reader = csv.reader(f)
+    for row in reader:
+        optoutrespondents.append(row)
+f.close()
+optoutheaders = optoutrespondents.pop(0)
+
 # import cases with orders to amend or certify, as created by amendorcertify.py
 amends = []
 amendfile = open('amendfile.txt', 'r')
@@ -143,6 +157,15 @@ closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
 for row in closedtablerows:
     allclosedcases.append(getdocketnum(row))
+# Get the next 100
+res = requests.get('https://dockets.ccb.gov/search/closed?&offset=300&max=100')
+res.raise_for_status()
+closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+closedtablerows = closedlistsoup.tbody.find_all('tr')
+for row in closedtablerows:
+    allclosedcases.append(getdocketnum(row))
+print("closedcasepdfs.py: When this gets to 100, add another URL to fetch more closed cases")
+print(str(len(closedtablerows)))
 allclosedcases.sort()
 
 newclosedcases = []
@@ -170,7 +193,12 @@ for case in newclosedcases:
     else:
         closedcasesdict[case]["Amended claims"] = "Didn't count"
     if case in certs:
-        closedcasesdict[case]["Opt outs"] = getoptouts(case)
+        optoutinfo = getoptouts(case)
+        closedcasesdict[case]["Opt outs"] = optoutinfo[0]
+        if optoutinfo[0] > 0:
+            respondents = optoutinfo[1]
+            for respondent in respondents:
+                optoutrespondents.append([case, respondent])
     else:
         closedcasesdict[case]["Opt outs"] = "-"
     if closedcasesdict[case]["Certifying orders"] > 0 and closedcasesdict[case]["Opt outs"] > 0:
@@ -225,7 +253,7 @@ for case in newclosedcases:
             pdfreason = "3 tries and still noncompliant"
         elif "did not receive  the respondent's address" in pdftext or "did not receive the respondent's address" in pdftext:
             pdfreason = "Failure to provide respondent address"
-        elif 'payment for the claim failed' in pdftext:
+        elif 'payment for the claim failed' in pdftext or 'payment for your claim failed' in pdftext:
             pdfreason = "Payment for the claim failed"
         elif 'request from the claimant' in pdftext or 'request to dismiss from' in pdftext:
             pdfreason = "Request from claimant"
@@ -237,6 +265,10 @@ for case in newclosedcases:
             pdfreason = "Work wasn't registered before; claimant has filed new claim"
         elif 'Copyright Office refused' in pdftext:
             pdfreason = "Copyright registration refused by Copyright Office"
+        elif 'grants the request, dismisses the claim with prejudice' in pdftext:
+            pdfreason = "Settlement, dismissed with prejudice"
+        elif 'FINDING OF BAD FAITH' in pdftext:
+            pdfreason = "Bad-faith conduct"
         else:
             pdfreason = "Unknown/cannot extract"
     closedcasesdict[case]["PDF reason"] = pdfreason
@@ -267,7 +299,7 @@ htmlreport.write('<p>Run date: ' + str(date.today()) + '</p>')
 htmlreport.write('<p>Number of <a href="https://dockets.ccb.gov/search/closed?max=100">closed cases</a>: ' +
     str(len(closedcasesdatalist)) + '</p>')
 
-# Check to make sure numnbers match
+# Check to make sure numbers match
 print("number of closed cases from initial allclosedcases list: " + str(len(allclosedcases)))
 fromdictlist = []
 for case in closedcasesdict:
@@ -279,7 +311,7 @@ if '22-CCB-0107' not in allclosedcases:
     allclosedcases.sort()
 
 # Get cases with scheduling orders, oldest to newest
-print("Getting list of cases with scheduling orders")
+print("Getting list of cases with scheduling orders (in closedcasepdfs.py)")
 res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16&sort=submittedDate&order=asc&max=100')
 res.raise_for_status()
 schedulingordercasesoup = bs4.BeautifulSoup(res.text, 'lxml')
@@ -380,4 +412,15 @@ with open('closedcases.csv', 'w') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames = closedcasesdatalist[0].keys())
     writer.writeheader()
     writer.writerows(closedcasesdatalist)
+csvfile.close()
+
+dedupedoptouts = []
+for item in optoutrespondents:
+    if item not in dedupedoptouts:
+        dedupedoptouts.append(item)
+dedupedoptouts.sort()
+dedupedoptouts.insert(0, optoutheaders)
+with open("optoutrespondents.csv", "w") as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerows(dedupedoptouts)
 csvfile.close()

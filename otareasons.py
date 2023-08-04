@@ -60,6 +60,11 @@ res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGrou
 res.raise_for_status()
 amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 amendtablerows.extend(amendlistsoup.tbody.find_all('tr'))
+# Get the 4th 100
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A52&offset=300&max=100')
+res.raise_for_status()
+amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+amendtablerows.extend(amendlistsoup.tbody.find_all('tr'))
 print('Total number of OTAs found: ' + str(len(amendtablerows)))
 
 # Get the basic info for each order to amend

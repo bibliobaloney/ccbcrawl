@@ -19,7 +19,7 @@ for record in reader:
         closedcases.append(record[0])
 closedcasedata.close()
 
-# import cases with final determinations, as created by amendorcertify.py
+# import cases with final determinations, as created by otasandoccs.py
 finals = []
 finalfile = open('finalfile.txt', 'r')
 for line in finalfile.readlines():
@@ -131,7 +131,7 @@ def stripdockettable(docketurl):
     return strippedrows, defaultcheck
 
 # Get cases with scheduling orders, oldest to newest
-print("Getting list of cases with scheduling orders")
+print("Getting list of cases with scheduling orders (in activecases.py)")
 res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A16&sort=submittedDate&order=asc&max=100')
 res.raise_for_status()
 schedulingordercasesoup = bs4.BeautifulSoup(res.text, 'lxml')
