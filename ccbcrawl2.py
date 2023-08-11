@@ -115,7 +115,10 @@ def getcapandclaim(docketurl):
         claimrow = casedocketsoup.find_all('tr')[-1]
         claimcell = claimrow.find_all('td')[1]
         claimlink = claimcell.a
-        claimpage = claimlink.get('href')
+        if docketurl == 'https://dockets.ccb.gov/case/detail/23-CCB-0263':
+            claimpage = '/claim/view/4485'
+        else:
+            claimpage = claimlink.get('href')
         claimurl = 'https://dockets.ccb.gov' + claimpage
         capandclaim.append(claimurl)
     else:

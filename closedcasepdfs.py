@@ -263,7 +263,7 @@ for case in newclosedcases:
             pdfreason = "Failure to amend"
         elif 'applied to register the copyright in the work and had filed a new' in pdftext:
             pdfreason = "Work wasn't registered before; claimant has filed new claim"
-        elif 'Copyright Office refused' in pdftext:
+        elif 'Copyright Office refused' in pdftext or 'allegedly infringed work has been refused' in pdftext:
             pdfreason = "Copyright registration refused by Copyright Office"
         elif 'grants the request, dismisses the claim with prejudice' in pdftext:
             pdfreason = "Settlement, dismissed with prejudice"
