@@ -92,12 +92,23 @@ res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGrou
 res.raise_for_status()
 amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 amendtablerows = amendlistsoup.tbody.find_all('tr')
+for row in amendtablerows:
+    amendedcasesall.append(getdocketnum(row))
+    amendordersall.append([getdocketnum(row), getdatefiled(row)])
 # Get the 4th hundred
 res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A52&offset=300&max=100')
 res.raise_for_status()
 amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 amendtablerows = amendlistsoup.tbody.find_all('tr')
-print("When this gets to 100, add another URL to fetch more OTAs")
+for row in amendtablerows:
+    amendedcasesall.append(getdocketnum(row))
+    amendordersall.append([getdocketnum(row), getdatefiled(row)])
+# Get the 5th hundred
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A52&offset=400&max=100')
+res.raise_for_status()
+amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+amendtablerows = amendlistsoup.tbody.find_all('tr')
+print("otasandoccs.py: When this gets to 100, add another URL to fetch more OTAs")
 print(str(len(amendtablerows)))
 for row in amendtablerows:
     amendedcasesall.append(getdocketnum(row))
@@ -123,42 +134,42 @@ for order in amendordersall:
         amendordersdeduped[order[0]] = order[1][:10]
         amendorderschecking.append(order[0])
 
-# Get the case numbers for the (first 100) cases with certified claims, orders of each type
+# Get the case numbers for the (first 100) cases with certified claims
 print("Getting orders certifying claims")
 certcasesall = []
 certordersall = []
+# First they categorized them as 3A54
 res = requests.get('https://dockets.ccb.gov/search/documents?docTypeGroup=type%3A54&max=100')
 res.raise_for_status()
 certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 certlistrows = certlistsoup.tbody.find_all('tr')
-print("Number of orders at first OCC URL")
+print("Number of orders at doctype 3A54 OCC URL")
 print(str(len(certlistrows)))
 for row in certlistrows:
     certcasesall.append(getdocketnum(row))
     certordersall.append([getdocketnum(row), getdatefiled(row)])
+# Then they switched to 3A113
 res = requests.get('https://dockets.ccb.gov/search/documents?docTypeGroup=type%3A113&max=100')
 res.raise_for_status()
 certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 certlistrows = certlistsoup.tbody.find_all('tr')
-print("Number of orders at second OCC URL")
-print(str(len(certlistrows)))
 for row in certlistrows:
     certcasesall.append(getdocketnum(row))
     certordersall.append([getdocketnum(row), getdatefiled(row)])
+# 2nd batch of 3A113 OCCs
 res = requests.get('https://dockets.ccb.gov/search/documents?docTypeGroup=type%3A113&offset=100&max=100')
 res.raise_for_status()
 certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 certlistrows = certlistsoup.tbody.find_all('tr')
-print("Number of orders at third OCC URL")
-print(str(len(certlistrows)))
 for row in certlistrows:
     certcasesall.append(getdocketnum(row))
     certordersall.append([getdocketnum(row), getdatefiled(row)])
+# 4th batch of 3A113 OCCs
 res = requests.get('https://dockets.ccb.gov/search/documents?docTypeGroup=type%3A113&offset=200&max=100')
 res.raise_for_status()
 certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 certlistrows = certlistsoup.tbody.find_all('tr')
-print("Number of orders at fourth OCC URL")
+print("Number of orders at most recent batch of 3A113 OCCs URL - update when this gets to 100")
 print(str(len(certlistrows)))
 for row in certlistrows:
     certcasesall.append(getdocketnum(row))
@@ -224,6 +235,13 @@ for row in closedtablerows:
     allclosedcases.append(getdocketnumclosedlist(row))
 # Get the 4th 100
 res = requests.get('https://dockets.ccb.gov/search/closed?&offset=300&max=100')
+res.raise_for_status()
+closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+closedtablerows = closedlistsoup.tbody.find_all('tr')
+for row in closedtablerows:
+    allclosedcases.append(getdocketnumclosedlist(row))
+# Get the 5th 100
+res = requests.get('https://dockets.ccb.gov/search/closed?&offset=400&max=100')
 res.raise_for_status()
 closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')

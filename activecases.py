@@ -211,7 +211,7 @@ activecasesreport.write('<p>Run date: ' + str(date.today()) + '</p>')
 activecasesreport.write('<p>Number of cases with scheduling orders: ' + str(len(caseswithschedulingorders)) + '</p>')
 activecasesreport.write('<p>Number of cases with scheduling orders showing up in the <a href="https://dockets.ccb.gov/search/closed">' +
     'closed cases list</a>: ' + str(len(subseqclosed)) + '</p>')
-activecasesreport.write('<p>Number of those cases with <a href="https://dockets.ccb.gov/search/closed">' +
+activecasesreport.write('<p>Number of those cases with <a href="https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A19&partyName=&startDate=&endDate=&columns=docket&columns=id&columns=documentTitle&columns=documentType&columns=parties&columns=submittedDate">' +
     'Final Determinations filed</a>: ' + str(len(finals)) + '</p><ul>')
 for case in finals:
     activecasesreport.write('<li><a href="https://dockets.ccb.gov/case/detail/' + case + '">' + case + '</a></li>')

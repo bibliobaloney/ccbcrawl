@@ -164,6 +164,13 @@ closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
 for row in closedtablerows:
     allclosedcases.append(getdocketnum(row))
+# Get the next 100
+res = requests.get('https://dockets.ccb.gov/search/closed?&offset=400&max=100')
+res.raise_for_status()
+closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+closedtablerows = closedlistsoup.tbody.find_all('tr')
+for row in closedtablerows:
+    allclosedcases.append(getdocketnum(row))
 print("closedcasepdfs.py: When this gets to 100, add another URL to fetch more closed cases")
 print(str(len(closedtablerows)))
 allclosedcases.sort()
@@ -269,6 +276,8 @@ for case in newclosedcases:
             pdfreason = "Settlement, dismissed with prejudice"
         elif 'FINDING OF BAD FAITH' in pdftext:
             pdfreason = "Bad-faith conduct"
+        elif 'not submit the second payment by' in pdftext:
+            pdfreason = "Second filing fee not paid"
         else:
             pdfreason = "Unknown/cannot extract"
     closedcasesdict[case]["PDF reason"] = pdfreason
