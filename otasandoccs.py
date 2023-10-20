@@ -51,7 +51,7 @@ def getamendedclaimdate(docketurl):
 # Get the case numbers for the (first 100) cases with final determinations
 print ("Getting final determinations")
 finalcases = []
-res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A19&max=100')
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A19&docTypeGroup=type%3A78&docTypeGroup=type%3A194&docTypeGroup=type%3A80&max=100')
 res.raise_for_status()
 finallistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 finaltablerows = finallistsoup.tbody.find_all('tr')
