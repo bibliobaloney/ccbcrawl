@@ -255,6 +255,10 @@ def getlatest(docketurl):
             lastdoc = lastdoc.replace('(Opens new window)', '')
         if 'Toggle tooltip (Keyboard shortcut: "Crtl+Enter" opens and "Escape" or "Delete" dismiss)' in lastdoc:
             lastdoc = lastdoc.replace('Toggle tooltip (Keyboard shortcut: "Crtl+Enter" opens and "Escape" or "Delete" dismiss)', '')
+        if lastdoc[:4] == 'View':
+            lastdoc = lastdoc[4:]
+        if lastdoc[:8] == 'Download':
+            lastdoc = lastdoc[8:]
         latestinfo.append(lastdoc)
         lastdocdate = mostrecentrow.find_all('td')[-1].get_text(strip=True)
         latestinfo.append(lastdocdate)
