@@ -108,6 +108,14 @@ res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGrou
 res.raise_for_status()
 amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 amendtablerows = amendlistsoup.tbody.find_all('tr')
+for row in amendtablerows:
+    amendedcasesall.append(getdocketnum(row))
+    amendordersall.append([getdocketnum(row), getdatefiled(row)])
+# Get the 6th hundred
+res = requests.get('https://dockets.ccb.gov/search/documents?search=&docTypeGroup=type%3A52&offset=500&max=100')
+res.raise_for_status()
+amendlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+amendtablerows = amendlistsoup.tbody.find_all('tr')
 print("otasandoccs.py: When this gets to 100, add another URL to fetch more OTAs")
 print(str(len(amendtablerows)))
 for row in amendtablerows:
@@ -164,8 +172,16 @@ certlistrows = certlistsoup.tbody.find_all('tr')
 for row in certlistrows:
     certcasesall.append(getdocketnum(row))
     certordersall.append([getdocketnum(row), getdatefiled(row)])
-# 4th batch of 3A113 OCCs
+# 3rd batch of 3A113 OCCs
 res = requests.get('https://dockets.ccb.gov/search/documents?docTypeGroup=type%3A113&offset=200&max=100')
+res.raise_for_status()
+certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+certlistrows = certlistsoup.tbody.find_all('tr')
+for row in certlistrows:
+    certcasesall.append(getdocketnum(row))
+    certordersall.append([getdocketnum(row), getdatefiled(row)])
+# 3rd batch of 3A113 OCCs
+res = requests.get('https://dockets.ccb.gov/search/documents?docTypeGroup=type%3A113&offset=300&max=100')
 res.raise_for_status()
 certlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 certlistrows = certlistsoup.tbody.find_all('tr')
@@ -242,6 +258,13 @@ for row in closedtablerows:
     allclosedcases.append(getdocketnumclosedlist(row))
 # Get the 5th 100
 res = requests.get('https://dockets.ccb.gov/search/closed?&offset=400&max=100')
+res.raise_for_status()
+closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+closedtablerows = closedlistsoup.tbody.find_all('tr')
+for row in closedtablerows:
+    allclosedcases.append(getdocketnumclosedlist(row))
+# Get the 6th 100
+res = requests.get('https://dockets.ccb.gov/search/closed?&offset=500&max=100')
 res.raise_for_status()
 closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
@@ -377,27 +400,28 @@ for case in allcases:
     otasandoccsdicts.append(newcase)
 
 # Do some math about times to 1st action
-latestcasewithorder = int(allcases[-1][7:])
-divfifty = latestcasewithorder / 50
-numberofbatches = math.ceil(divfifty)
-averagesbybatch = []
-batchsizes = []
-batchnum = 0
-while batchnum < numberofbatches:
-    batchnum += 1
-    listend = batchnum * 50
-    listname = 'batch' + str(batchnum)
-    listname = []
-    for case in allcases:
-        docketnum = casedatadict[case]["Docket No."]
-        docketnumint = int(docketnum[7:])
-        if docketnumint > (listend - 49) and docketnumint <= listend:
-            if casedatadict[case]["Oldest doc"] == "Claim":
-                listname.append(timestoaction[case])
-    batchavg = mean(listname)
-    averagesbybatch.append(batchavg)
-    sizeofbatch = len(listname)
-    batchsizes.append(sizeofbatch)
+# We're not checking on batches anymore, just total
+# latestcasewithorder = int(allcases[-1][7:])
+# divfifty = latestcasewithorder / 50
+# numberofbatches = math.ceil(divfifty)
+# averagesbybatch = []
+# batchsizes = []
+# batchnum = 0
+# while batchnum < numberofbatches:
+#     batchnum += 1
+#     listend = batchnum * 50
+#     listname = 'batch' + str(batchnum)
+#     listname = []
+#     for case in allcases:
+#         docketnum = casedatadict[case]["Docket No."]
+#         docketnumint = int(docketnum[7:])
+#         if docketnumint > (listend - 49) and docketnumint <= listend:
+#             if casedatadict[case]["Oldest doc"] == "Claim":
+#                 listname.append(timestoaction[case])
+#     batchavg = mean(listname)
+#     averagesbybatch.append(batchavg)
+#     sizeofbatch = len(listname)
+#     batchsizes.append(sizeofbatch)
 
 # Get lists of cases with foreign claimants and respondents
 foreignclaimants = []

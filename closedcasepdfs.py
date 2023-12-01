@@ -171,6 +171,13 @@ closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
 closedtablerows = closedlistsoup.tbody.find_all('tr')
 for row in closedtablerows:
     allclosedcases.append(getdocketnum(row))
+# Get the next 100
+res = requests.get('https://dockets.ccb.gov/search/closed?&offset=500&max=100')
+res.raise_for_status()
+closedlistsoup = bs4.BeautifulSoup(res.text, 'lxml')
+closedtablerows = closedlistsoup.tbody.find_all('tr')
+for row in closedtablerows:
+    allclosedcases.append(getdocketnum(row))
 print("closedcasepdfs.py: When this gets to 100, add another URL to fetch more closed cases")
 print(str(len(closedtablerows)))
 allclosedcases.sort()

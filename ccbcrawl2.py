@@ -103,9 +103,11 @@ def getcapandclaim(docketurl):
         if len(firstdoccell.find_all("span", class_=re.compile("document-restricted"))) != 0:
             ourspan = firstdoccell.find("span", class_=re.compile("document-restricted"))
             firstdoc = ourspan.get_text(strip=True)
-        else:
+        elif len(firstdoccell.find_all("span", class_=re.compile("document-link-title"))) != 0:
             ourspan = firstdoccell.find("span", class_=re.compile("document-link-title"))
             firstdoc = ourspan.get_text(strip=True)
+        else:
+            firstdoc = firstdoccell.get_text(strip=True)
         if '(Opens new window)' in firstdoc:
             firstdoc = firstdoc.replace('(Opens new window)', '')
         capandclaim.append(firstdoc)
